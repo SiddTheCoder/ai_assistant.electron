@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+// import { useState, useEffect, useMemo } from "react";
 // @ts-ignore
 import TextIcon from "../../assets/text-icon.png";
 import "../App.css";
@@ -6,6 +6,10 @@ import "../App.css";
 import BackgroundImage from "../../assets/bg-paper-icon.jpg";
 
 export default function Lander() {
+  (async () => {
+    const devs = await window.electronApi.getMediaDevices();
+    console.log("Devs", devs);
+  })();
   return (
     <div
       className="h-screen w-screen webkit-drag-drag flex items-center justify-center relative"

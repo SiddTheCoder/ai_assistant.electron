@@ -8,6 +8,11 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: "dist-react",
+    rollupOptions: {
+      input: {
+        preload : path.resolve(__dirname, "./dist-electron/preload.cjs"),
+      },
+    }
   },
   server: {
     port: 3000,

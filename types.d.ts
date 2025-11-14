@@ -14,9 +14,9 @@ export interface IMediaDevice {
   groupId: string;
 }
 export interface IMediaDevices {
-  audioinput: IMediaDevice[];
-  audiooutput: IMediaDevice[];
-  videoinput: IMediaDevice[];
+  audioInputs: IMediaDevice[];
+  audioOutputs: IMediaDevice[];
+  videoInputs: IMediaDevice[];
 }
 export interface IMediaPermissions {
   camera : boolean
@@ -44,7 +44,7 @@ export type IEventPayloadMapping = {
 declare global {
   interface Window{
     // electron's APIs
-    electron: {
+    electronApi: {
       sendFrameAction: (payload: IFrameWindowAction) => void
 
       //media APIs
