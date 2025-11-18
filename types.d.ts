@@ -32,7 +32,7 @@ export interface IMediaStream{
 
 export type IEventPayloadMapping = {
   frameWindowAction: IFrameWindowAction
-  
+  getFrameState: IFrameWindowAction
   // Media 
   getMediaDevices: IMediaDevices
   getMediaPermissions: IMediaPermissions;
@@ -42,15 +42,15 @@ export type IEventPayloadMapping = {
 }
 
 declare global {
-  interface Window{
+  interface Window {
     // electron's APIs
     electronApi: {
-      sendFrameAction: (payload: IFrameWindowAction) => void
-
+      sendFrameAction: (payload: IFrameWindowAction) => void;
+      getFrameState: () => Promise<IFrameWindowAction>;
       //media APIs
-      getMediaDevices: () => Promise<IMediaDevices>
+      getMediaDevices: () => Promise<IMediaDevices>;
       getMediaPermissions: () => Promise<IMediaPermissions>;
       checkMediaPermission: () => Promise<IMediaPermissions>;
-    }
+    };
   }
 }

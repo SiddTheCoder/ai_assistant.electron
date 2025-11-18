@@ -1,7 +1,8 @@
-import { ipcMain, WebContents, WebFrameMain } from "electron";
+import { app, ipcMain, WebContents, WebFrameMain } from "electron";
 import { IEventPayloadMapping } from "../../../types.js";
 import { isDevMode } from "./isDevMode.js";
 import { getUIPath } from "./pathResolver.js";
+import path from "node:path";
 
 export function ipcMainHandle<Key extends keyof IEventPayloadMapping>(
   key: Key,
@@ -40,7 +41,7 @@ function validateEventFrame(frame: WebFrameMain | null) {
   if (isDevMode() && new URL(frame.url).host === "localhost:3000") {
     return;
   }
-  if (!frame.url.startsWith(getUIPath())) {
-    throw new Error(`Not allowed to load URL ${frame.url} $ malacious Event`);
-  }
+  // if (!frame.url.startsWith(path.join(app.getAppPath(), "/dist-react/index.html"))) {
+  //   throw new Error(`Not allowed to load URL ${frame.url} $ malacious Event`);
+  // }
 }

@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("electronApi", {
   getMediaDevices: () => ipcInvoke("getMediaDevices"),
   getMediaPermissions: () => ipcInvoke("getMediaPermissions"),
   checkMediaPermission: () => ipcInvoke("checkMediaPermission"),
+  getFrameState: () => ipcInvoke("getFrameState", {})
 } satisfies Window["electronApi"]);
 
 

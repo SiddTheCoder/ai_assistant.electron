@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron"
 import * as path from "node:path";
-import { getPreloadPath } from "./utils/pathResolver.js";
+import { getPreloadPath, getUIPath } from "./utils/pathResolver.js";
 import { isDevMode } from "./utils/isDevMode.js";
 import { createTray } from "./utils/createTray.js";
 import { ipcMainHandle, ipcMainOn } from "./utils/ipcUtils.js";
@@ -18,10 +18,15 @@ app.on("ready", () => {
     minHeight: 600,
     webPreferences: {
       preload: getPreloadPath(),
+      partition: "persist:spark",
       nodeIntegration: false,
       contextIsolation: true,
     },
-    frame: false,
+    // frame: false,
+  });
+  
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.show();
   });
 
   if (isDevMode()) {
@@ -30,7 +35,7 @@ app.on("ready", () => {
     mainWindow.loadURL("http://localhost:3000");
   } else {
     console.log("Production window");
-    mainWindow.loadFile(path.join(__dirname, "../dist-react/index.html"));
+    mainWindow.loadFile(path.join(app.getAppPath(), "/dist-react/index.html"));
   }
 
   //listen and handle the invoked function (media APIs)
@@ -55,6 +60,10 @@ app.on("ready", () => {
         mainWindow.close();
         break;
     }
+  });
+
+  ipcMainHandle("getFrameState", () => {
+    return mainWindow.isMinimized() ? "MINIMIZE" : "MAXIMIZE";
   });
 
   // Tray
