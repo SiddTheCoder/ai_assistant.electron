@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from "react";
 import PngLogoIcon from "../../../assets/icon-high-ql.png";
-import { X, Minus, Square, Copy } from "lucide-react";
+import { X, Minus, Square, Copy, Mic, MicOff, Camera, CameraOff } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { toggleCameraOn, toggleMicrophoneListening } from "@/store/features/localState/localSlice";
 
 export default function Header() {
-  const [isMainWindowMaximized, setIsMainWindowMaximized] = useState<boolean>(false);
-  
+  const dispatch = useAppDispatch()
+  const [isMainWindowMaximized, setIsMainWindowMaximized] =
+    useState<boolean>(false);
+  const { isMicrophoneListening, isCameraOn } = useAppSelector((state) => state.localState);
+
   useEffect(() => {
     (async () => {
-      const isMax = await window.electronApi.isMainWindowMaximized()
+      const isMax = await window.electronApi.isMainWindowMaximized();
       setIsMainWindowMaximized(isMax);
     })();
 
-    // continuis listen wndow frame state change 
+    // continuis listen wndow frame state change
     window.electronApi.onWindowMaximizeStateChange((isMainWinMaximized) => {
       setIsMainWindowMaximized(isMainWinMaximized);
-    })
+    });
   }, []);
 
   console.log("Frame State main", isMainWindowMaximized);
@@ -28,8 +33,42 @@ export default function Header() {
 
       {/* Middle Section */}
       <div className="md:w-[70%] sm:w-[50%] w-96 flex justify-center items-center pl-25">
-        <div className="border-[0.2px] webkit-drag-nodrag cursor-pointer transition-all duration-150 ease-in-out hover:border-black/50 border-white/5 w-[60%] h-7 rounded-md text-center hover:bg-black/5 bg-white/5 text-gray-300">
-          <span className="text-[13px]">SPARK</span>
+        <div className="border-[0.2px] webkit-drag-nodrag cursor-pointer transition-all duration-150 ease-in-out hover:border-white/10 border-white/5 w-[60%] h-7 rounded-md text-center hover:bg-white/10 bg-white/5 text-gray-300">
+          <span className="text-[13px] font-semibold cursor-pointer">
+            S P A R K
+          </span>
+        </div>
+        {/* Microphone */}
+        <div className="webkit-drag-nodrag cursor-pointer mx-1 pl-4">
+          {isMicrophoneListening ? (
+            <Mic
+              onClick={() => dispatch(toggleMicrophoneListening())}
+              strokeWidth={0.75}
+              size={18}
+            />
+          ) : (
+            <MicOff
+              onClick={() => dispatch(toggleMicrophoneListening())}
+              strokeWidth={0.75}
+              size={18}
+            />
+          )}
+        </div>
+        {/* Camera */}
+        <div className="webkit-drag-nodrag cursor-pointer mx-2 ">
+          {isCameraOn ? (
+            <Camera
+              onClick={() => dispatch(toggleCameraOn())}
+              strokeWidth={0.75}
+              size={18}
+            />
+          ) : (
+            <CameraOff
+              onClick={() => dispatch(toggleCameraOn())}
+              strokeWidth={0.75}
+              size={18}
+            />
+          )}
         </div>
       </div>
 

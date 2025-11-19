@@ -6,6 +6,7 @@
   -webkit-app-region: no-drag;
 }
 
-body, * {
-  cursor: url('/cursor/text-icon.png'), auto;
+/* Allow pointer cursor to actually show */
+.cursor-pointer {
+  cursor: pointer !important;
 }

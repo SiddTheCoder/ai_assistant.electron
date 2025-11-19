@@ -1,8 +1,8 @@
 {
-  "name": "ai-client",
+  "name": "spark",
   "private": true,
   "version": "1.0.0",
-  "description": "A ai-assistant client from Chromoverse",
+  "description": "SPARK -  AI Assistant from Chromoverse",
   "author": "Chromoverse <SiddTheCoder>",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -19,6 +19,7 @@
     "dist:linux": "npm run transpile:electron && npm run build && electron-builder --linux --x64"
   },
   "dependencies": {
+    "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@reduxjs/toolkit": "^2.10.1",
     "@tailwindcss/vite": "^4.1.17",

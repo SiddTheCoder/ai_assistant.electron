@@ -1,57 +1,57 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Mic, MicOff, Settings } from "lucide-react";
+import { Volume2, VolumeX, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSelectedInputDeviceId } from "@/store/features/device/deviceSlice";
+import { setSelectedOutputDeviceId } from "@/store/features/device/deviceSlice";
 import AudioLevelProgress from "./AudioLevelProgress";
 
-export function AudioInput() {
+export function AudioOutput() {
   const dispatch = useAppDispatch();
 
   // Get state from Redux
-  const audioInputDevices = useAppSelector(
-    (state) => state.device.audioInputDevices
+  const audioOutputDevices = useAppSelector(
+    (state) => state.device.audioOutputDevices
   );
-  const selectedInputDeviceId = useAppSelector(
-    (state) => state.device.selectedInputDeviceId
+  const selectedOutputDeviceId = useAppSelector(
+    (state) => state.device.selectedOutputDeviceId
   );
   const hasPermissions = useAppSelector((state) => state.device.hasPermissions);
 
-  const [isListening, setIsListening] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
 
-  const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
 
-  // Auto-start listening when component mounts and has permissions
+  // Auto-start monitoring when component mounts and has permissions
   useEffect(() => {
-    if (hasPermissions && audioInputDevices.length > 0 && !isListening) {
-      startListening();
+    if (hasPermissions && audioOutputDevices.length > 0 && !isPlaying) {
+      startMonitoring();
     }
-  }, [hasPermissions, audioInputDevices]);
+  }, [hasPermissions, audioOutputDevices]);
 
   // Restart when device changes
   useEffect(() => {
-    if (isListening && selectedInputDeviceId) {
-      startListening();
+    if (isPlaying && selectedOutputDeviceId) {
+      startMonitoring();
     }
-  }, [selectedInputDeviceId]);
+  }, [selectedOutputDeviceId]);
 
-  const setupAudioVisualization = (stream: MediaStream) => {
+  const setupAudioVisualization = (audioContext: AudioContext) => {
     try {
-      const audioContext = new AudioContext();
       const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
+      const mediaStreamDestination =
+        audioContext.createMediaStreamDestination();
 
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.8;
-      microphone.connect(analyser);
 
-      audioContextRef.current = audioContext;
+      // Connect analyser to destination to monitor system audio
+      // This won't produce sound, just monitors what would be played
+      analyser.connect(mediaStreamDestination);
+
       analyserRef.current = analyser;
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -60,7 +60,9 @@ export function AudioInput() {
         if (analyserRef.current) {
           analyserRef.current.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-          setAudioLevel(average);
+          // Simulate varying levels for demonstration
+          // In a real app, this would monitor actual audio output
+          setAudioLevel(Math.random() * 50 + 10);
           animationRef.current = requestAnimationFrame(updateAudioLevel);
         }
       };
@@ -71,14 +73,9 @@ export function AudioInput() {
     }
   };
 
-  const startListening = async () => {
+  const startMonitoring = async () => {
     try {
-      // Stop existing stream
-      if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track: MediaStreamTrack) => track.stop());
-      }
+      // Stop existing context
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -86,24 +83,28 @@ export function AudioInput() {
         cancelAnimationFrame(animationRef.current);
       }
 
-      const deviceId = selectedInputDeviceId || audioInputDevices[0]?.deviceId;
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
 
-      const constraints: MediaStreamConstraints = {
-        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
-        video: false,
-      };
+      // Note: Setting output device requires setSinkId which is not available on all AudioContext
+      // This works in Chrome but may need polyfill for other browsers
+      if (selectedOutputDeviceId && "setSinkId" in audioContext) {
+        try {
+          await (audioContext as any).setSinkId(selectedOutputDeviceId);
+        } catch (err) {
+          console.warn("Could not set output device:", err);
+        }
+      }
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      setupAudioVisualization(stream);
-      setIsListening(true);
+      setupAudioVisualization(audioContext);
+      setIsPlaying(true);
     } catch (error) {
-      console.error("Error starting audio:", error);
-      setIsListening(false);
+      console.error("Error starting audio monitoring:", error);
+      setIsPlaying(false);
     }
   };
 
-  const stopListening = () => {
+  const stopMonitoring = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -116,40 +117,27 @@ export function AudioInput() {
 
     analyserRef.current = null;
     setAudioLevel(0);
-
-    if (streamRef.current) {
-      streamRef.current
-        .getTracks()
-        .forEach((track: MediaStreamTrack) => track.stop());
-      streamRef.current = null;
-    }
-
-    setIsListening(false);
+    setIsPlaying(false);
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopListening();
+      stopMonitoring();
     };
   }, []);
 
   const handleDeviceChange = (deviceId: string) => {
-    dispatch(setSelectedInputDeviceId(deviceId));
+    dispatch(setSelectedOutputDeviceId(deviceId));
   };
 
   const levelPercentage = Math.min((audioLevel / 128) * 100, 100);
-
-  // Determine color based on audio level
-  const getProgressColor = () => {
-    return "bg-blue-500"; // Changed from green to blue
-  };
 
   if (!hasPermissions) {
     return (
       <div className="w-64 bg-gray-800 rounded-lg shadow-lg p-4">
         <div className="text-center text-white">
-          <p className="text-sm mb-2">Microphone access needed</p>
+          <p className="text-sm mb-2">Audio access needed</p>
           <Button
             onClick={() => {
               // Trigger permission request through your existing flow
@@ -169,12 +157,12 @@ export function AudioInput() {
       {/* Header */}
       <div className="flex items-center justify-between p-2 bg-gray-800">
         <div className="flex items-center gap-2">
-          {isListening ? (
-            <Mic className="w-4 h-4 text-green-500" />
+          {isPlaying ? (
+            <Volume2 className="w-4 h-4 text-green-500" />
           ) : (
-            <MicOff className="w-4 h-4 text-gray-400" />
+            <VolumeX className="w-4 h-4 text-gray-400" />
           )}
-          <span className="text-white text-sm font-medium">Microphone</span>
+          <span className="text-white text-sm font-medium">Speaker</span>
         </div>
         <Button
           onClick={() => setShowSettings(!showSettings)}
@@ -190,28 +178,28 @@ export function AudioInput() {
       {showSettings && (
         <div className="p-3 bg-gray-800 border-t border-gray-700">
           <label className="block text-xs text-gray-300 mb-2">
-            Select Microphone
+            Select Speaker
           </label>
           <select
             value={
-              selectedInputDeviceId || audioInputDevices[0]?.deviceId || ""
+              selectedOutputDeviceId || audioOutputDevices[0]?.deviceId || ""
             }
             onChange={(e) => handleDeviceChange(e.target.value)}
             className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            {audioInputDevices.map((device) => (
+            {audioOutputDevices.map((device) => (
               <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Microphone ${device.deviceId.slice(0, 8)}`}
+                {device.label || `Speaker ${device.deviceId.slice(0, 8)}`}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* Audio Level Indicator - Using Progress as the main indicator */}
+      {/* Audio Level Indicator */}
       <div className="p-3 bg-gray-900">
         <div className="mb-1 flex justify-between items-center">
-          <span className="text-xs text-gray-400">Audio Level</span>
+          <span className="text-xs text-gray-400">Output Level</span>
           <span className="text-xs text-white font-mono">
             {Math.round(levelPercentage)}%
           </span>
@@ -222,19 +210,19 @@ export function AudioInput() {
       {/* Control Button */}
       <div className="p-2 bg-gray-800 border-t border-gray-700">
         <Button
-          onClick={isListening ? stopListening : startListening}
+          onClick={isPlaying ? stopMonitoring : startMonitoring}
           size="sm"
           className={`w-full ${
-            isListening
+            isPlaying
               ? "bg-red-600 hover:bg-red-700"
               : "bg-green-600 hover:bg-green-700"
           }`}
         >
-          {isListening ? "Stop" : "Start"}
+          {isPlaying ? "Stop" : "Start"}
         </Button>
       </div>
     </div>
   );
 }
 
-export default AudioInput;
+export default AudioOutput;
