@@ -5,3 +5,7 @@
 .webkit-drag-nodrag {
   -webkit-app-region: no-drag;
 }
+
+body, * {
+  cursor: url('/cursor/text-icon.png'), auto;
+}

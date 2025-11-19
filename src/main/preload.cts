@@ -8,11 +8,15 @@ import { IEventPayloadMapping, IFrameWindowAction, IMediaDevices, IMediaPermissi
 contextBridge.exposeInMainWorld("electronApi", {
   //frameWindowAction Apis
   sendFrameAction: (payload: IFrameWindowAction) => ipcSend("frameWindowAction", payload),
+  getFrameState: () => ipcInvoke("getFrameState", {}),
+  isMainWindowMaximized: () => ipcInvoke("isMainWindowMaximized", {}),
+  onWindowMaximizeStateChange: (callback: (payload: boolean) => void) => ipcOn("isMainWindowMaximized", callback),
+  
   //media APIs
   getMediaDevices: () => ipcInvoke("getMediaDevices"),
   getMediaPermissions: () => ipcInvoke("getMediaPermissions"),
   checkMediaPermission: () => ipcInvoke("checkMediaPermission"),
-  getFrameState: () => ipcInvoke("getFrameState", {})
+
 } satisfies Window["electronApi"]);
 
 

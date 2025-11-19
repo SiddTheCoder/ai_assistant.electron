@@ -1,5 +1,6 @@
 import { AudioInput } from "@/components/local/device/AudioInput";
 import { VideoInputComponent } from "@/components/local/device/VideoInput";
+import Header from "@/components/local/Header";
 import { Button } from "@/components/ui/button";
 import { useSocket } from "@/context/socketContextProvider";
 import { useAppSelector } from "@/store/hooks";
@@ -32,7 +33,8 @@ function Home() {
     }
   }, [socket, isConnected]);
   return (
-    <div className="h-screen w-screen bg-slate-950">
+    <div className="h-screen w-screen bg-[#0F0E0E]">
+      <Header />
       {/* <AudioInput />
       <VideoInputComponent /> */}
       <Button onClick={() => navigate("/")}>Back to home</Button>

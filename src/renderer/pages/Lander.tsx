@@ -25,7 +25,6 @@ export default function Lander() {
   useEffect(() => {
     (async () => {
       await window.electronApi.getFrameState().then((res) => {
-        // console.log("Frame State", res);
         setFrameState(res);
       });
     })()

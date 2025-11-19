@@ -31,15 +31,16 @@ export interface IMediaStream{
 // -----
 
 export type IEventPayloadMapping = {
-  frameWindowAction: IFrameWindowAction
-  getFrameState: IFrameWindowAction
-  // Media 
-  getMediaDevices: IMediaDevices
+  frameWindowAction: IFrameWindowAction;
+  getFrameState: IFrameWindowAction;
+  // Media
+  getMediaDevices: IMediaDevices;
   getMediaPermissions: IMediaPermissions;
   checkMediaPermission: IMediaPermissions;
-  startMediaStream: IMediaStream
-  stopMediaStream: void
-}
+  startMediaStream: IMediaStream;
+  stopMediaStream: void;
+  isMainWindowMaximized : boolean
+};
 
 declare global {
   interface Window {
@@ -47,6 +48,8 @@ declare global {
     electronApi: {
       sendFrameAction: (payload: IFrameWindowAction) => void;
       getFrameState: () => Promise<IFrameWindowAction>;
+      isMainWindowMaximized: () => Promise<boolean>;
+      onWindowMaximizeStateChange: (callback: (payload: boolean) => void) => void;
       //media APIs
       getMediaDevices: () => Promise<IMediaDevices>;
       getMediaPermissions: () => Promise<IMediaPermissions>;

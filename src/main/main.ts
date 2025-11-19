@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { getPreloadPath, getUIPath } from "./utils/pathResolver.js";
 import { isDevMode } from "./utils/isDevMode.js";
 import { createTray } from "./utils/createTray.js";
-import { ipcMainHandle, ipcMainOn } from "./utils/ipcUtils.js";
+import { ipcMainHandle, ipcMainOn, ipcWebContentSend } from "./utils/ipcUtils.js";
 import { checkMediaPermissions, getMediaDevices, getMediaPermissions } from "./utils/mediaManager.js";
 
 app.on("ready", () => {
@@ -22,7 +22,7 @@ app.on("ready", () => {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    // frame: false,
+    frame: false,
   });
   
   mainWindow.once("ready-to-show", () => {
@@ -31,7 +31,7 @@ app.on("ready", () => {
 
   if (isDevMode()) {
     console.log("Development window");
-    mainWindow.webContents.openDevTools(); // openDevTools
+    // mainWindow.webContents.openDevTools(); // openDevTools
     mainWindow.loadURL("http://localhost:3000");
   } else {
     console.log("Production window");
@@ -61,6 +61,16 @@ app.on("ready", () => {
         break;
     }
   });
+ 
+  mainWindow.on("maximize", () => {
+    ipcWebContentSend("isMainWindowMaximized" , mainWindow.webContents, true);
+  })
+
+  mainWindow.on("unmaximize", () => { 
+    ipcWebContentSend("isMainWindowMaximized" , mainWindow.webContents, false);
+  })
+
+  ipcMainHandle("isMainWindowMaximized", () => mainWindow.isMaximized());
 
   ipcMainHandle("getFrameState", () => {
     return mainWindow.isMinimized() ? "MINIMIZE" : "MAXIMIZE";

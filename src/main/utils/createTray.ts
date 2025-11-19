@@ -10,6 +10,8 @@ export function createTray(mainWindow: BrowserWindow) {
     )
   );
 
+  tray.setToolTip("Spark - AI Assistant");
+
   tray.setContextMenu(
     Menu.buildFromTemplate([
       {
