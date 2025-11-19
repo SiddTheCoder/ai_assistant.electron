@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Mic, MicOff, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedInputDeviceId } from "@/store/features/device/deviceSlice";
+import { toggleMicrophoneListening } from "@/store/features/localState/localSlice";
 import AudioLevelProgress from "./AudioLevelProgress";
 
 export function AudioInput() {
@@ -17,8 +17,10 @@ export function AudioInput() {
     (state) => state.device.selectedInputDeviceId
   );
   const hasPermissions = useAppSelector((state) => state.device.hasPermissions);
+  const isMicrophoneListening = useAppSelector(
+    (state) => state.localState.isMicrophoneListening
+  );
 
-  const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -26,17 +28,33 @@ export function AudioInput() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
+  const hasAutoStartedRef = useRef(false);
 
   // Auto-start listening when component mounts and has permissions
   useEffect(() => {
-    if (hasPermissions && audioInputDevices.length > 0 && !isListening) {
-      startListening();
+    if (
+      hasPermissions &&
+      audioInputDevices.length > 0 &&
+      !isMicrophoneListening &&
+      !hasAutoStartedRef.current
+    ) {
+      hasAutoStartedRef.current = true;
+      dispatch(toggleMicrophoneListening());
     }
-  }, [hasPermissions, audioInputDevices]);
+  }, [hasPermissions, audioInputDevices, dispatch]);
 
-  // Restart when device changes
+  // React to Redux state changes
   useEffect(() => {
-    if (isListening && selectedInputDeviceId) {
+    if (isMicrophoneListening) {
+      startListening();
+    } else {
+      stopListening();
+    }
+  }, [isMicrophoneListening]);
+
+  // Restart when device changes (only if currently listening)
+  useEffect(() => {
+    if (isMicrophoneListening && selectedInputDeviceId) {
       startListening();
     }
   }, [selectedInputDeviceId]);
@@ -96,10 +114,12 @@ export function AudioInput() {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       setupAudioVisualization(stream);
-      setIsListening(true);
     } catch (error) {
       console.error("Error starting audio:", error);
-      setIsListening(false);
+      // If there's an error, turn off the listening state
+      if (isMicrophoneListening) {
+        dispatch(toggleMicrophoneListening());
+      }
     }
   };
 
@@ -123,8 +143,6 @@ export function AudioInput() {
         .forEach((track: MediaStreamTrack) => track.stop());
       streamRef.current = null;
     }
-
-    setIsListening(false);
   };
 
   // Cleanup on unmount
@@ -138,12 +156,11 @@ export function AudioInput() {
     dispatch(setSelectedInputDeviceId(deviceId));
   };
 
-  const levelPercentage = Math.min((audioLevel / 128) * 100, 100);
-
-  // Determine color based on audio level
-  const getProgressColor = () => {
-    return "bg-blue-500"; // Changed from green to blue
+  const handleToggleListening = () => {
+    dispatch(toggleMicrophoneListening());
   };
+
+  const levelPercentage = Math.min((audioLevel / 128) * 100, 100);
 
   if (!hasPermissions) {
     return (
@@ -169,7 +186,7 @@ export function AudioInput() {
       {/* Header */}
       <div className="flex items-center justify-between p-2 bg-gray-800">
         <div className="flex items-center gap-2">
-          {isListening ? (
+          {isMicrophoneListening ? (
             <Mic className="w-4 h-4 text-green-500" />
           ) : (
             <MicOff className="w-4 h-4 text-gray-400" />
@@ -208,7 +225,7 @@ export function AudioInput() {
         </div>
       )}
 
-      {/* Audio Level Indicator - Using Progress as the main indicator */}
+      {/* Audio Level Indicator */}
       <div className="p-3 bg-gray-900">
         <div className="mb-1 flex justify-between items-center">
           <span className="text-xs text-gray-400">Audio Level</span>
@@ -222,15 +239,15 @@ export function AudioInput() {
       {/* Control Button */}
       <div className="p-2 bg-gray-800 border-t border-gray-700">
         <Button
-          onClick={isListening ? stopListening : startListening}
+          onClick={handleToggleListening}
           size="sm"
           className={`w-full ${
-            isListening
+            isMicrophoneListening
               ? "bg-red-600 hover:bg-red-700"
               : "bg-green-600 hover:bg-green-700"
           }`}
         >
-          {isListening ? "Stop" : "Start"}
+          {isMicrophoneListening ? "Stop" : "Start"}
         </Button>
       </div>
     </div>

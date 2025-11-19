@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 
 const initialState = {
-  isMicrophoneListening: false,
+  isMicrophoneListening: true,
   isCameraOn: false
 }
 

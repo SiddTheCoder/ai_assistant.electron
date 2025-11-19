@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
-import { Settings, X } from "lucide-react";
+import { Settings } from "lucide-react";
 import type { IMediaDevice } from "types";
 import { setSelectedCameraDeviceId } from "@/store/features/device/deviceSlice";
-import { toggleMicrophoneListening } from "@/store/features/localState/localSlice";
+import { toggleCameraOn } from "@/store/features/localState/localSlice";
 
 export function VideoInputComponent() {
   const dispatch = useAppDispatch();
@@ -17,29 +17,35 @@ export function VideoInputComponent() {
     (state) => state.device.selectedCameraDeviceId
   );
   const hasPermissions = useAppSelector((state) => state.device.hasPermissions);
+  const isCameraOn = useAppSelector((state) => state.localState.isCameraOn);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   // Auto-start stream when component mounts and has permissions
   useEffect(() => {
-    if (hasPermissions && videoInputDevices.length > 0 && !isStreaming) {
-      startStream();
+    if (hasPermissions && videoInputDevices.length > 0 && !isCameraOn) {
+      dispatch(toggleCameraOn());
     }
   }, [hasPermissions, videoInputDevices]);
 
-  // Auto-restart stream when selected device changes
+  // React to Redux state changes
   useEffect(() => {
-    if (isStreaming && selectedCameraDeviceId) {
+    if (isCameraOn) {
+      startStream();
+    } else {
+      stopStream();
+    }
+  }, [isCameraOn]);
+
+  // Auto-restart stream when selected device changes (only if camera is on)
+  useEffect(() => {
+    if (isCameraOn && selectedCameraDeviceId) {
       startStream();
     }
   }, [selectedCameraDeviceId]);
-
-  // make the isStreaming state reactive
-  useEffect(() => {}, [isStreaming]);
 
   const startStream = async () => {
     try {
@@ -71,11 +77,12 @@ export function VideoInputComponent() {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       videoRef.current.srcObject = stream;
-      dispatch(toggleMicrophoneListening());
-      setIsStreaming(true);
     } catch (error) {
       console.error("Error starting stream:", error);
-      setIsStreaming(false);
+      // If there's an error, turn off the camera state
+      if (isCameraOn) {
+        dispatch(toggleCameraOn());
+      }
     }
   };
 
@@ -89,8 +96,6 @@ export function VideoInputComponent() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    dispatch(toggleMicrophoneListening());
-    setIsStreaming(false);
   };
 
   // Cleanup on unmount
@@ -102,6 +107,10 @@ export function VideoInputComponent() {
 
   const handleDeviceChange = (deviceId: string) => {
     dispatch(setSelectedCameraDeviceId(deviceId));
+  };
+
+  const handleToggleCamera = () => {
+    dispatch(toggleCameraOn());
   };
 
   if (!hasPermissions) {
@@ -170,17 +179,32 @@ export function VideoInputComponent() {
           className="w-full h-full object-cover"
           style={{ transform: "scaleX(-1)" }}
         />
-        {!isStreaming && (
+        {!isCameraOn && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
             <p className="text-gray-400 text-sm">No video</p>
           </div>
         )}
-        {isStreaming && (
+        {isCameraOn && (
           <div className="absolute top-2 right-2 px-2 py-1 bg-red-600 rounded text-white text-xs font-bold flex items-center gap-1">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             LIVE
           </div>
         )}
+      </div>
+
+      {/* Control Button */}
+      <div className="p-2 bg-gray-800 border-t border-gray-700">
+        <Button
+          onClick={handleToggleCamera}
+          size="sm"
+          className={`w-full ${
+            isCameraOn
+              ? "bg-red-600 hover:bg-red-700"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          {isCameraOn ? "Stop Camera" : "Start Camera"}
+        </Button>
       </div>
     </div>
   );
