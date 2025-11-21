@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Settings } from "lucide-react";
+import { MessageSquareWarning, Mic, MicOff, Settings } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedInputDeviceId } from "@/store/features/device/deviceSlice";
 import { toggleMicrophoneListening } from "@/store/features/localState/localSlice";
+import { useSocket } from "@/context/socketContextProvider";
 import AudioLevelProgress from "./AudioLevelProgress";
 
 export function AudioInput() {
   const dispatch = useAppDispatch();
+  const { socket, isConnected, emit, on, off } = useSocket();
 
   // Get state from Redux
   const audioInputDevices = useAppSelector(
@@ -23,12 +25,29 @@ export function AudioInput() {
 
   const [audioLevel, setAudioLevel] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // ✨ NEW: Track if backend is processing
+  const [recordingStartTime, setRecordingStartTime] = useState<number>(0); // ✨ NEW: Track recording start
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const hasAutoStartedRef = useRef(false);
+
+  // Recording refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSpeakingRef = useRef(false);
+  const isProcessingRef = useRef(false); // ✨ NEW: Ref version for immediate access
+  const isRecordingRef = useRef(false); // ✨ NEW: Ref to track recording state reliably
+
+  // Voice Activity Detection settings
+  const SILENCE_THRESHOLD = 15;
+  const SILENCE_DURATION = 1500;
+  const SPEAKING_THRESHOLD = 20;
 
   // Auto-start listening when component mounts and has permissions
   useEffect(() => {
@@ -79,6 +98,10 @@ export function AudioInput() {
           analyserRef.current.getByteFrequencyData(dataArray);
           const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
           setAudioLevel(average);
+
+          // Voice Activity Detection
+          handleVoiceActivity(average);
+
           animationRef.current = requestAnimationFrame(updateAudioLevel);
         }
       };
@@ -87,6 +110,310 @@ export function AudioInput() {
     } catch (error) {
       console.error("Error setting up audio visualization:", error);
     }
+  };
+
+  const handleVoiceActivity = (level: number) => {
+    const levelPercentage = (level / 128) * 100;
+
+    // ✨ Don't start recording if backend is processing
+    if (isProcessingRef.current) {
+      console.log("🔒 Backend is processing, ignoring voice activity");
+      return;
+    }
+
+    // User started speaking
+    if (levelPercentage > SPEAKING_THRESHOLD && !isSpeakingRef.current) {
+      isSpeakingRef.current = true;
+      setIsSpeaking(true);
+
+      // Clear any existing silence timeout
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
+
+      // Start recording if not already recording (use ref!)
+      if (!isRecordingRef.current) {
+        startRecording();
+      }
+    }
+
+    // User is speaking - reset silence timer
+    if (levelPercentage > SPEAKING_THRESHOLD && isSpeakingRef.current) {
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+
+      // Set new timeout for silence detection
+      silenceTimeoutRef.current = setTimeout(() => {
+        handleSilenceDetected();
+      }, SILENCE_DURATION);
+    }
+
+    // Complete silence
+    if (levelPercentage <= SILENCE_THRESHOLD && isSpeakingRef.current) {
+      if (!silenceTimeoutRef.current) {
+        silenceTimeoutRef.current = setTimeout(() => {
+          handleSilenceDetected();
+        }, SILENCE_DURATION);
+      }
+    }
+  };
+
+  const handleSilenceDetected = () => {
+    console.log("🔇 Silence detected, stopping recording");
+    isSpeakingRef.current = false;
+    setIsSpeaking(false);
+
+    // Clear the silence timeout
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
+    // ✅ Check MediaRecorder state, not isRecording state
+    const recorder = mediaRecorderRef.current;
+    if (recorder && (recorder.state === "recording" || recorder.state === "paused")) {
+      console.log("📤 Stopping recording to send audio...", {
+        state: recorder.state,
+        chunks: audioChunksRef.current.length
+      });
+      stopRecording();
+    } else {
+      console.warn("⚠️ Not recording on silence:", { 
+        hasRecorder: !!recorder,
+        state: recorder?.state
+      });
+    }
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current || isRecordingRef.current || isProcessingRef.current) {
+      console.log("⚠️ Cannot start recording:", { 
+        hasStream: !!streamRef.current, 
+        isRecording: isRecordingRef.current, 
+        isProcessing: isProcessingRef.current 
+      });
+      return;
+    }
+
+    try {
+      // ✨ Clear previous chunks at start
+      audioChunksRef.current = [];
+      console.log("🧹 Cleared previous audio chunks");
+
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/ogg";
+
+      const mediaRecorder = new MediaRecorder(streamRef.current, {
+        mimeType,
+        audioBitsPerSecond: 128000,
+      });
+
+      mediaRecorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log("📼 MediaRecorder stopped, preparing to send audio...", {
+          chunks: audioChunksRef.current.length,
+          totalSize: audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
+        });
+        
+        // ✅ CRITICAL: Update BOTH state and ref
+        isRecordingRef.current = false;
+        setIsRecording(false);
+        
+        // ✅ Then send audio
+        if (audioChunksRef.current.length > 0) {
+          await sendAudioToBackend();
+        } else {
+          console.warn("⚠️ No audio chunks to send on stop");
+        }
+        
+        mediaRecorderRef.current = null;
+      };
+
+      mediaRecorder.onerror = (event: Event) => {
+        console.error("❌ MediaRecorder error:", event);
+        isRecordingRef.current = false;
+        setIsRecording(false);
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorder.onstart = () => {
+        console.log("✅ MediaRecorder started");
+      };
+
+      // Request data every 100ms
+      mediaRecorder.start(100);
+      mediaRecorderRef.current = mediaRecorder;
+      isRecordingRef.current = true;
+      setIsRecording(true);
+      setRecordingStartTime(Date.now()); // ✨ Track start time
+
+      console.log("🎙️ Recording started", { mimeType, state: mediaRecorder.state });
+    } catch (error) {
+      console.error("❌ Error starting recording:", error);
+      isRecordingRef.current = false;
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    
+    if (!recorder) {
+      console.log("⚠️ Cannot stop recording: no recorder");
+      return;
+    }
+
+    // ✅ Check the actual MediaRecorder state, not our isRecording state
+    if (recorder.state === "inactive") {
+      console.log("⚠️ MediaRecorder already inactive");
+      return;
+    }
+
+    // ✅ Enforce minimum recording duration
+    const recordingDuration = Date.now() - recordingStartTime;
+    if (recordingDuration < 500) {
+      console.log(`⏱️ Recording too short (${recordingDuration}ms), waiting...`);
+      return;
+    }
+
+    console.log("🛑 Stopping recording...", { 
+      state: recorder.state, 
+      chunks: audioChunksRef.current.length,
+      duration: recordingDuration 
+    });
+
+    try {
+      // ✅ CRITICAL: Stop the recorder first, THEN update state in onstop callback
+      if (recorder.state === "recording" || recorder.state === "paused") {
+        recorder.stop(); // This will trigger onstop → which sets isRecording to false
+        console.log("✅ MediaRecorder.stop() called");
+      }
+    } catch (error) {
+      console.error("❌ Error stopping recording:", error);
+      setIsRecording(false);
+      mediaRecorderRef.current = null;
+    }
+  };
+
+  const sendAudioToBackend = async () => {
+    // ✨ CRITICAL: Validate we have audio data
+    if (audioChunksRef.current.length === 0) {
+      console.warn("⚠️ No audio chunks to send");
+      return;
+    }
+
+    if (!socket || !isConnected) {
+      console.error("❌ Socket not connected");
+      audioChunksRef.current = [];
+      return;
+    }
+
+    // ✨ Check if already processing
+    if (isProcessingRef.current) {
+      console.warn("⚠️ Already processing a request, skipping...");
+      audioChunksRef.current = [];
+      return;
+    }
+
+    try {
+      // Combine all chunks into a single blob
+      const audioBlob = new Blob(audioChunksRef.current, {
+        type: mediaRecorderRef.current?.mimeType || "audio/webm;codecs=opus",
+      });
+
+      // ✨ Validate audio size
+      if (audioBlob.size < 1000) {
+        console.warn("⚠️ Audio too small, likely empty:", audioBlob.size);
+        audioChunksRef.current = [];
+        return;
+      }
+
+      console.log("📤 Sending audio:", {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        chunks: audioChunksRef.current.length,
+      });
+
+      // ✨ Set processing state BEFORE sending
+      isProcessingRef.current = true;
+      setIsProcessing(true);
+
+      // Convert to Base64
+      const base64Audio = await blobToBase64(audioBlob);
+
+      // ✨ Send to backend
+      emit("send-user-voice-query", {
+        audio: base64Audio,
+        mimeType: audioBlob.type,
+        timestamp: Date.now(),
+        duration: audioChunksRef.current.length * 100,
+      });
+
+      console.log("✅ Audio sent successfully, waiting for response...");
+      
+    } catch (error) {
+      console.error("❌ Error sending audio:", error);
+      // Reset processing state on error
+      isProcessingRef.current = false;
+      setIsProcessing(false);
+    } finally {
+      // ✨ ALWAYS clear chunks after sending
+      audioChunksRef.current = [];
+    }
+  };
+
+  // ✨ Listen for query results to reset processing state
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleQueryResult = (data: any) => {
+        console.log("📨 Query result received:", data);
+        
+        // ✨ Reset processing state
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+        
+        console.log("🔓 Ready for next recording");
+      };
+
+      on("query-result", handleQueryResult);
+      
+      // ✨ Also listen for processing status
+      on("processing", (data: any) => {
+        console.log("⏳ Backend processing:", data.status);
+      });
+
+      return () => {
+        off("query-result", handleQueryResult);
+        off("processing");
+      };
+    }
+  }, [socket, isConnected, on, off]);
+
+  // Helper function to convert Blob to Base64
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          const base64 = reader.result.split(",")[1];
+          resolve(base64);
+        } else {
+          reject(new Error("Failed to convert blob to base64"));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
   const startListening = async () => {
@@ -107,23 +434,51 @@ export function AudioInput() {
       const deviceId = selectedInputDeviceId || audioInputDevices[0]?.deviceId;
 
       const constraints: MediaStreamConstraints = {
-        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+        audio: deviceId
+          ? {
+              deviceId: { exact: deviceId },
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            }
+          : {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
         video: false,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       setupAudioVisualization(stream);
+      
+      console.log("🎤 Listening started");
     } catch (error) {
-      console.error("Error starting audio:", error);
-      // If there's an error, turn off the listening state
+      console.error("❌ Error starting audio:", error);
       if (isMicrophoneListening) {
         dispatch(toggleMicrophoneListening());
       }
     }
   };
 
-  const stopListening = () => {
+  const stopListening = async () => {
+    console.log("🛑 Stopping listening...");
+
+    // ✨ Stop recording if active (check ref!)
+    if (isRecordingRef.current && mediaRecorderRef.current) {
+      stopRecording();
+      
+      // Wait briefly for the recording to finish
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    // Clear silence timeout
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -136,6 +491,10 @@ export function AudioInput() {
 
     analyserRef.current = null;
     setAudioLevel(0);
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    setIsSpeaking(false);
+    isSpeakingRef.current = false;
 
     if (streamRef.current) {
       streamRef.current
@@ -143,6 +502,8 @@ export function AudioInput() {
         .forEach((track: MediaStreamTrack) => track.stop());
       streamRef.current = null;
     }
+    
+    console.log("✅ Listening stopped");
   };
 
   // Cleanup on unmount
@@ -169,7 +530,7 @@ export function AudioInput() {
           <p className="text-sm mb-2">Microphone access needed</p>
           <Button
             onClick={() => {
-              // Trigger permission request through your existing flow
+              // Trigger permission request
             }}
             size="sm"
             className="bg-blue-600 hover:bg-blue-700"
@@ -192,6 +553,18 @@ export function AudioInput() {
             <MicOff className="w-4 h-4 text-gray-400" />
           )}
           <span className="text-white text-sm font-medium">Microphone</span>
+          {isRecording && (
+            <span className="flex items-center gap-1 text-xs text-red-500 animate-pulse">
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              REC
+            </span>
+          )}
+          {isProcessing && (
+            <span className="flex items-center gap-1 text-xs text-blue-500 animate-pulse">
+              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+              WAIT
+            </span>
+          )}
         </div>
         <Button
           onClick={() => setShowSettings(!showSettings)}
@@ -234,21 +607,32 @@ export function AudioInput() {
           </span>
         </div>
         <AudioLevelProgress level={audioLevel} />
-      </div>
 
-      {/* Control Button */}
-      <div className="p-2 bg-gray-800 border-t border-gray-700">
-        <Button
-          onClick={handleToggleListening}
-          size="sm"
-          className={`w-full ${
-            isMicrophoneListening
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {isMicrophoneListening ? "Stop" : "Start"}
-        </Button>
+        {/* Status indicators */}
+        <div className="mt-2 space-y-1">
+          {!isMicrophoneListening && (
+            <span className="text-[12px] text-red-400 flex gap-1 items-center">
+              <MessageSquareWarning size={10} /> Microphone is muted
+            </span>
+          )}
+          {isSpeaking && !isProcessing && (
+            <span className="text-[12px] text-green-400 flex gap-1 items-center">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              Speaking detected
+            </span>
+          )}
+          {isProcessing && (
+            <span className="text-[12px] text-blue-400 flex gap-1 items-center">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
+              Processing request...
+            </span>
+          )}
+          {!isConnected && (
+            <span className="text-[12px] text-yellow-400 flex gap-1 items-center">
+              <MessageSquareWarning size={10} /> Socket disconnected
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,18 +1,40 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
+import type { RegisteredPayload, SocketEvents } from "../types/socket.types";
+import type { User } from "../types/user.types";
 
-// ==================== TYPES ====================
+// type safe emit function
+type TypedEmit = <K extends keyof SocketEvents>(
+  event: K,
+  ...args: Parameters<SocketEvents[K]>
+) => void;
 
-interface User {
-  _id: string;
-  name?: string;
-  email?: string;
-}
+// type safe on function
+type TypedOn = <K extends keyof SocketEvents>(
+  event: K,
+  callback: SocketEvents[K]
+) => void;
+
+// type safe off function
+type TypedOff = <K extends keyof SocketEvents>(
+  event: K,
+  callback?: SocketEvents[K]
+) => void;
+
+// type safe once function
+type TypedOnce = <K extends keyof SocketEvents>(
+  event: K,
+  callback: SocketEvents[K]
+) => void;
 
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
+  emit: TypedEmit;
+  on: TypedOn;
+  off: TypedOff;
+  once: TypedOnce;
 }
 
 interface SocketProviderProps {
@@ -33,7 +55,6 @@ export const SocketProvider = ({
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  // ⭐ FIX: Remove /socket.io from URL
   const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://127.0.0.1:8000";
 
   console.log("Socket URL:", socketUrl);
@@ -42,7 +63,7 @@ export const SocketProvider = ({
     // Don't connect if no user
     if (!currentUser) return;
 
-    // ⭐ FIX: Prevent reconnecting if already exists
+    // Prevent reconnecting if already exists
     if (socketRef.current?.connected) {
       console.log("Socket already connected, skipping...");
       return;
@@ -52,8 +73,8 @@ export const SocketProvider = ({
 
     // ========= CREATE SOCKET.IO INSTANCE =========
     const newSocket = io(socketUrl, {
-      path: "/socket.io", // ⭐ This is the path, NOT part of the URL
-      transports: ["websocket", "polling"], 
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
       withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 5,
@@ -68,13 +89,13 @@ export const SocketProvider = ({
     newSocket.on("connect", () => {
       console.log("✅ Socket connected:", newSocket.id);
 
-      // ⭐ Register user with backend
+      // Register user with backend
       newSocket.emit("register_user", currentUser._id);
 
       setIsConnected(true);
     });
 
-    newSocket.on("registered", (data: { userId: string }) => {
+    newSocket.on("registered", (data: RegisteredPayload) => {
       console.log("🟢 User registered on server:", data.userId);
     });
 
@@ -91,7 +112,7 @@ export const SocketProvider = ({
     newSocket.on("reconnect", (attemptNumber: number) => {
       console.log("🔄 Reconnected after", attemptNumber, "attempts");
 
-      // ⭐ MUST re-register user after reconnection
+      // MUST re-register user after reconnection
       newSocket.emit("register_user", currentUser._id);
 
       setIsConnected(true);
@@ -105,11 +126,55 @@ export const SocketProvider = ({
         socketRef.current = null;
       }
     };
-  }, [currentUser?._id, socketUrl]); // ⭐ FIX: Depend on _id only, not entire user object
+  }, [currentUser?._id, socketUrl]);
+
+  // ========= TYPE-SAFE WRAPPER FUNCTIONS =========
+
+  const emit: TypedEmit = (event, ...args) => {
+    if (socketRef.current && isConnected) {
+      socketRef.current.emit(event as string, ...args);
+    } else {
+      console.warn(
+        `Cannot emit "${String(event)}": socket ${
+          !socketRef.current ? "not initialized" : "not connected"
+        }`
+      );
+    }
+  };
+
+  const on: TypedOn = (event, callback) => {
+    if (socketRef.current) {
+      socketRef.current.on(event as string, callback as any);
+    } else {
+      console.warn(`Cannot listen to "${String(event)}": socket not initialized`);
+    }
+  };
+
+  const off: TypedOff = (event, callback) => {
+    if (socketRef.current) {
+      if (callback) {
+        socketRef.current.off(event as string, callback as any);
+      } else {
+        socketRef.current.off(event as string);
+      }
+    }
+  };
+
+  const once: TypedOnce = (event, callback) => {
+    if (socketRef.current) {
+      socketRef.current.once(event as string, callback as any);
+    } else {
+      console.warn(`Cannot listen once to "${String(event)}": socket not initialized`);
+    }
+  };
 
   const contextValue: SocketContextType = {
     socket: socketRef.current,
     isConnected,
+    emit,
+    on,
+    off,
+    once,
   };
 
   if (!currentUser) return <>{children}</>;
@@ -132,66 +197,3 @@ export const useSocket = (): SocketContextType => {
 
   return context;
 };
-// ==================== USAGE EXAMPLE ====================
-
-/*
-// In your App.tsx or main layout:
-
-import { SocketProvider } from './context/SocketProvider';
-
-function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-  return (
-    <SocketProvider value={currentUser}>
-      <YourRoutes />
-    </SocketProvider>
-  );
-}
-
-// In any component:
-
-import { useSocket } from './context/SocketProvider';
-
-function ChatComponent() {
-  const { socket, isConnected } = useSocket();
-
-  useEffect(() => {
-    if (!socket || !isConnected) return;
-
-    // Listen for events
-    socket.on('new-message', (data) => {
-      console.log('New message:', data);
-    });
-
-    socket.on('friend-request-received', (data) => {
-      console.log('Friend request from:', data.from);
-    });
-
-    // Cleanup
-    return () => {
-      socket.off('new-message');
-      socket.off('friend-request-received');
-    };
-  }, [socket, isConnected]);
-
-  const sendMessage = () => {
-    if (!socket) return;
-    
-    socket.emit('send-message', {
-      senderId: 'user1',
-      receiverId: 'user2',
-      content: 'Hello!'
-    });
-  };
-
-  return (
-    <div>
-      <p>Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
-      <button onClick={sendMessage} disabled={!isConnected}>
-        Send Message
-      </button>
-    </div>
-  );
-}
-*/

@@ -31,7 +31,7 @@ app.on("ready", () => {
 
   if (isDevMode()) {
     console.log("Development window");
-    // mainWindow.webContents.openDevTools(); // openDevTools
+    mainWindow.webContents.openDevTools(); // openDevTools
     mainWindow.loadURL("http://localhost:3000");
   } else {
     console.log("Production window");

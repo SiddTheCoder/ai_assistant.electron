@@ -11,22 +11,22 @@ function Home() {
   //   useAppSelector((state) => state.device);
   // console.log("Devices", audioInputDevices, videoInputDevices, audioOutputDevices);
 
-  useEffect(() => {
-    if (!socket || !isConnected) return;
-    console.log("trying to get new message");
-    socket.emit("get-new-message");
-    socket.on("new-message", (data) => {
-      console.log("New message:", data);
-    });
-    // socket.emit("send-query", "Hello Good Morning Dude");
-    // socket.on("query-result", (data) => {
-    //   console.log("Query response:", data);
-    // });
+  // useEffect(() => {
+  //   if (!socket || !isConnected) return;
+  //   // console.log("trying to get new message");
+  //   // socket.emit("get-new-message");
+  //   // socket.on("new-message", (data) => {
+  //   //   console.log("New message:", data);
+  //   // });
+  //   // socket.emit("send-query", "Hello Good Morning Dude");
+  //   // socket.on("query-result", (data) => {
+  //   //   console.log("Query response:", data);
+  //   // });
 
-    return () => {
-      socket.off("new-message");
-    };
-  }, [socket, isConnected]);
+  //   return () => {
+  //     socket.off("new-message");
+  //   };
+  // }, [socket, isConnected]);
 
   return (
     <div className="h-screen w-screen bg-[#070818] text-white overflow-hidden">

@@ -207,20 +207,6 @@ export function AudioOutput() {
         <AudioLevelProgress level={audioLevel} />
       </div>
 
-      {/* Control Button */}
-      <div className="p-2 bg-gray-800 border-t border-gray-700">
-        <Button
-          onClick={isPlaying ? stopMonitoring : startMonitoring}
-          size="sm"
-          className={`w-full ${
-            isPlaying
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {isPlaying ? "Stop" : "Start"}
-        </Button>
-      </div>
     </div>
   );
 }
