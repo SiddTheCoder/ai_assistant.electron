@@ -194,7 +194,7 @@ function handleCloseEvent(mainWindow: BrowserWindow) {
 // send actionDetails to python process
 function sendToPython(data: any): Promise<any> {
   console.log("📤 sendToPython called with:", data);
-  
+
   if (!pythonProcess) {
     console.error("❌ pythonProcess is null");
     return Promise.reject(new Error("Python process is not running"));
@@ -209,9 +209,10 @@ function sendToPython(data: any): Promise<any> {
     const timeout = setTimeout(() => {
       console.error("⏰ Python response timeout");
       reject(new Error("Python response timeout"));
-    }, 5000);
+    }, 15000); // ⬅️ INCREASED FROM 5000 to 15000 (15 seconds)
 
-    pythonProcess.stdout.once("data", (raw) => {
+    // Listen for data ONCE
+    const dataHandler = (raw: Buffer) => {
       clearTimeout(timeout);
       console.log("📥 Received raw data from Python:", raw.toString());
       try {
@@ -222,7 +223,11 @@ function sendToPython(data: any): Promise<any> {
         console.error("❌ JSON parse error:", error);
         reject(error);
       }
-    });
+    };
+
+    // Remove any existing listeners to prevent multiple responses
+    pythonProcess.stdout.removeAllListeners("data");
+    pythonProcess.stdout.once("data", dataHandler);
 
     const jsonData = JSON.stringify(data) + "\n";
     console.log("📤 Writing to Python stdin:", jsonData);

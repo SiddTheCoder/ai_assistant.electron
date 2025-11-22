@@ -8,7 +8,7 @@ export default function CenterPanel() {
   const { socket, isConnected, on, emit, off } = useSocket()
    const [status, setStatus] = React.useState<string>("Not started");
   
-  const check = async() => {
+  const getAudio = async(text:string | undefined) => {
     // console.log("Socket", socket, isConnected)
     // if (!socket || !isConnected) return
     // console.log("emmiting the message now")
@@ -21,7 +21,7 @@ export default function CenterPanel() {
    const res = await axios.post(
      `${import.meta.env.VITE_API_URL}/api/tts`,
      {
-       text: "व्हाट्सएप खुल गया सर, देखिए। किसे मैसेज करना है?",
+       text: text,
      },
      { responseType: "arraybuffer" }
    );
@@ -47,7 +47,7 @@ export default function CenterPanel() {
   action: "open_notepad",
   emotion: "neutral",
   answerDetails: {
-    content: "Hey there new is me",
+    content: "Hey there new is me lorem ipsum",
     sources: [],
     references: [],
     additional_info: {}
@@ -59,7 +59,7 @@ export default function CenterPanel() {
     artist: "",
     topic: "",
     platforms: [],
-    app_name: "vscode",
+    app_name: "chrome",
     target: "",
     location: "",
     searchResults: [],
@@ -73,17 +73,20 @@ export default function CenterPanel() {
 
   const hit = async () => {
     try {
-      console.log("🟢 Calling window.electronApi.runPythonAction...");
-      const res = await window.electronApi.runPythonAction(obj);
-      
-      console.log("🟢 Response received:", res);
-      setStatus(`Response: ${JSON.stringify(res)}`);
-      
-      if (res.status === "ok") {
-        console.log("✅ Action completed:", res.result);
-      } else {
-        console.error("❌ Action failed:", res.message);
-      }
+      await getAudio(obj.answer)
+       console.log("🟢 Calling window.electronApi.runPythonAction...");
+
+       const res = await window.electronApi.runPythonAction(obj);
+
+       console.log("🟢 Response received:", res);
+       setStatus(`Response: ${JSON.stringify(res)}`);
+
+       if (res.status === "ok") {
+         console.log("✅ Action completed:", res.result);
+         await getAudio(obj.actionCompletedMessage);
+       } else {
+         console.error("❌ Action failed:", res.message);
+       }
     } catch (error) {
       console.error("❌ Error calling Python action:", error);
       setStatus(`Error: ${error}`);

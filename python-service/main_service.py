@@ -3,14 +3,13 @@ import sys
 import json
 import logging
 from typing import Dict, Any
-from actions.play_song import play_song
-from actions.make_call import make_call
-from actions.send_message import send_message
-from actions.search import search
-from actions.open_app import open_app
-from actions.navigate import navigate
-from actions.control_device import control_device
-from actions.create_task import create_task
+from actions.song_features.play_song import play_song
+from actions.call_features.make_call import make_call
+from actions.send_features.send_message import send_message
+from actions.search_features.search import search
+from actions.app_features.open_app import open_app
+from actions.navigate_features.navigate import navigate
+from actions.task_features.create_task import create_task
 
 print("Python service started!", file=sys.stderr, flush=True)
 
@@ -33,7 +32,6 @@ ACTION_HANDLERS = {
     "search": search,
     "open_app": open_app,
     "navigate": navigate,
-    "control_device": control_device,
     "create_task": create_task,
     "empty": lambda x: {"status": "ok", "message": "No action needed"}
 }
