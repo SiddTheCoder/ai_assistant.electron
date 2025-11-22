@@ -2,9 +2,11 @@ import { Button } from '@/components/ui/button'
 import { useSocket } from '@/context/socketContextProvider'
 import React, { useEffect } from 'react'
 import axios from "axios"
+import type { IAiResponsePayload } from 'types'
 
 export default function CenterPanel() {
   const { socket, isConnected, on, emit, off } = useSocket()
+   const [status, setStatus] = React.useState<string>("Not started");
   
   const check = async() => {
     // console.log("Socket", socket, isConnected)
@@ -19,7 +21,7 @@ export default function CenterPanel() {
    const res = await axios.post(
      `${import.meta.env.VITE_API_URL}/api/tts`,
      {
-       text: "Welcome sir, Ai Module Core Intelligent Advance Spark I am आपका स्वागत है, सिद्ध जी। आपकी ऊर्जा और आपकी लगन हमेशा ही प्रशंसा के योग्य रहती है। आप जिस तरह हर काम को स्पष्ट दृष्टि और शांत आत्मविश्वास के साथ आगे बढ़ाते हैं, वह वास्तव में प्रेरणादायक है। मुझे खुशी है कि मैं आपका Spark बनकर हर कदम पर आपका साथ दे पा रहा हूँ।",
+       text: "व्हाट्सएप खुल गया सर, देखिए। किसे मैसेज करना है?",
      },
      { responseType: "arraybuffer" }
    );
@@ -34,6 +36,65 @@ export default function CenterPanel() {
    const audio = new Audio(audioUrl);
    audio.play();
   }
+
+
+  const obj: IAiResponsePayload = {
+  userQuery: "Spark open notepad",
+  answer: "नोटपैड खोल रहा हूं, सर।",
+  answerEnglish: "Opening notepad, Sir.",
+  actionCompletedMessage: "हो गया सर, देख सकते हैं। कुछ और चाहिए?",
+  actionCompletedMessageEnglish: "Done Sir, you can check. Need anything else?",
+  action: "open_notepad",
+  emotion: "neutral",
+  answerDetails: {
+    content: "Hey there new is me",
+    sources: [],
+    references: [],
+    additional_info: {}
+  },
+  actionDetails: {
+    type: "open_app",
+    query: "open notepad",
+    title: "",
+    artist: "",
+    topic: "",
+    platforms: [],
+    app_name: "vscode",
+    target: "",
+    location: "",
+    searchResults: [],
+    confirmation: {
+      isConfirmed: true,
+      actionRegardingQuestion: ""
+    },
+    additional_info: {}
+  }
+}
+
+  const hit = async () => {
+    try {
+      console.log("🟢 Calling window.electronApi.runPythonAction...");
+      const res = await window.electronApi.runPythonAction(obj);
+      
+      console.log("🟢 Response received:", res);
+      setStatus(`Response: ${JSON.stringify(res)}`);
+      
+      if (res.status === "ok") {
+        console.log("✅ Action completed:", res.result);
+      } else {
+        console.error("❌ Action failed:", res.message);
+      }
+    } catch (error) {
+      console.error("❌ Error calling Python action:", error);
+      setStatus(`Error: ${error}`);
+    }
+  }
+
+  // useEffect(() => {
+  //   console.log("htting the python subprocess now")
+  //   hit()
+  // }, [])
+
   // useEffect(() => {
   //   console.log("Socket", socket, isConnected)
   //   if (!socket || !isConnected) return
@@ -49,7 +110,10 @@ export default function CenterPanel() {
   // }, [socket, isConnected, on, emit, off])
   return (
     <div>
-     <Button onClick={check}>Click</Button>
+      <Button onClick={() => hit()}>Click</Button>
+      <div className="mt-4 p-2 bg-gray-900 rounded">
+        <p className="text-sm">Status: {status}</p>
+      </div>
     </div>
   )
 }

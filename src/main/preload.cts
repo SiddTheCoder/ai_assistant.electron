@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IEventPayloadMapping, IFrameWindowAction, IMediaDevices, IMediaPermissions } from "../../types"
+import { IEventPayloadMapping, IFrameWindowAction, IActionDetails, IAiResponsePayload } from "../../types"
 
 (() => {
   console.log("Preload Loaded");
@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld("electronApi", {
   getMediaDevices: () => ipcInvoke("getMediaDevices"),
   getMediaPermissions: () => ipcInvoke("getMediaPermissions"),
   checkMediaPermission: () => ipcInvoke("checkMediaPermission"),
+
+  //python Automation API
+   runPythonAction: (payload: IAiResponsePayload) => ipcInvoke("runPythonAction", payload),
 
 } satisfies Window["electronApi"]);
 

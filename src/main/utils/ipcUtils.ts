@@ -1,16 +1,14 @@
-import { app, ipcMain, WebContents, WebFrameMain } from "electron";
+import {  ipcMain, WebContents, WebFrameMain, IpcMainInvokeEvent } from "electron";
 import { IEventPayloadMapping } from "../../../types.js";
 import { isDevMode } from "./isDevMode.js";
-import { getUIPath } from "./pathResolver.js";
-import path from "node:path";
 
 export function ipcMainHandle<Key extends keyof IEventPayloadMapping>(
   key: Key,
-  handler: () => IEventPayloadMapping[Key] | Promise<IEventPayloadMapping[Key]>
+  handler: (event: IpcMainInvokeEvent, payload?: any) => IEventPayloadMapping[Key] | Promise<IEventPayloadMapping[Key]>
 ) {
-  ipcMain.handle(key, async (event) => {
+  ipcMain.handle(key, async (event, payload) => {
     validateEventFrame(event.senderFrame);
-    return await handler();
+    return await handler(event, payload);
   });
 }
 
