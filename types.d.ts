@@ -84,7 +84,7 @@ export interface IAiResponsePayload {
 }
 
 export interface IPythonActionResponse {
-  status: "ok" | "error";
+  status: "ok" | "error" | "confirmation_needed";
   result?: any;
   message?: string;
 }

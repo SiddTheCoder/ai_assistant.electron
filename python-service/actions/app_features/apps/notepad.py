@@ -158,7 +158,7 @@ class NotepadApp(BaseApp):
                 
                 # Ensure notepad is focused (click in center of screen)
                 import win32gui
-                hwnd = win32gui.FindWindow(None, "Untitled - Notepad")
+                hwnd = win32gui.FindWindow(None, "SparkAI - Notepad")
                 if hwnd:
                     win32gui.SetForegroundWindow(hwnd)
                     time.sleep(0.3)
@@ -166,7 +166,7 @@ class NotepadApp(BaseApp):
                 # Type slowly and reliably
                 for char in self.content:
                     pyautogui.press(char) if len(char) == 1 and char.isalnum() else pyautogui.typewrite([char])
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                 
                 logger.info("Typing completed")
                 

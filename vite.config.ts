@@ -11,7 +11,7 @@ export default defineConfig({
     outDir: "dist-react",
   },
   server: {
-    port: 3000,
+    port: 5123,
     strictPort: true,
   },
   resolve: {

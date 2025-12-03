@@ -2,31 +2,18 @@ import Header from "@/components/local/Header";
 import CenterPanel from "@/components/local/home/CenterPanel";
 import LeftPanel from "@/components/local/home/LeftPanel";
 import RightPanel from "@/components/local/home/RightPanel";
-import { useSocket } from "@/context/socketContextProvider";
-import { useEffect } from "react";
+import { useAiResponseHandler } from "@/hooks/useAiResponseHandler";
 
 function Home() {
-  const { socket, isConnected } = useSocket();
-  // const { audioInputDevices, videoInputDevices, audioOutputDevices } =
-  //   useAppSelector((state) => state.device);
-  // console.log("Devices", audioInputDevices, videoInputDevices, audioOutputDevices);
-
-  // useEffect(() => {
-  //   if (!socket || !isConnected) return;
-  //   // console.log("trying to get new message");
-  //   // socket.emit("get-new-message");
-  //   // socket.on("new-message", (data) => {
-  //   //   console.log("New message:", data);
-  //   // });
-  //   // socket.emit("send-query", "Hello Good Morning Dude");
-  //   // socket.on("query-result", (data) => {
-  //   //   console.log("Query response:", data);
-  //   // });
-
-  //   return () => {
-  //     socket.off("new-message");
-  //   };
-  // }, [socket, isConnected]);
+  useAiResponseHandler({
+    autoListen: true,
+    onSuccess(response, payload) {
+      console.log("Action completed successfully!");
+    },
+    onError(error, payload) {
+      console.error("Action failed:", error);
+    }
+  })
 
   return (
     <div className="h-screen w-screen bg-[#070818] text-white overflow-hidden">

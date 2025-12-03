@@ -4,22 +4,29 @@ export interface SocketEvents {
   register_user: (userId: string) => void;
   "send-user-voice-query": (data: UserQueryPayload) => void;
   "send-user-text-query": (query: string) => void;
+  "request-tts": (data: TTSPayload) => void;
+  "test-ws": (data?:any) => void;
 
   // ========= Server -> Client events =========
   registered: (data: RegisteredPayload) => void;
   "query-result": (data: any) => void;
+  "query-error": (data: any) => void;
+  "tts-start": () => void;
+  "tts-chunk": (chunk: ArrayBuffer) => void;
+  "tts-end": () => void;
+  "response-tts": (res : any) => void;
   "transcription-result": (data: TranscriptionPayload) => void;
+  "server-status": (data: ServerStatus) => void;
+  
   error: (error: ErrorPayload) => void;
   connect: () => void;
   disconnect: (reason: string) => void;
   connect_error: (error: Error) => void;
   reconnect: (attemptNumber: number) => void;
-  processing : (data : any) => void
+  processing: (data: any) => void;
 }
 
-/**
- * Payload sent when user speaks
- */
+// Payload sent when user speaks
 export interface UserQueryPayload {
   audio: ArrayBuffer | string; // ArrayBuffer or base64 string
   mimeType: string; // e.g., "audio/webm", "audio/ogg"
@@ -27,6 +34,12 @@ export interface UserQueryPayload {
   duration?: number; // Duration in milliseconds
   userId?: string; // Optional user identifier
   sessionId?: string; // Optional session identifier
+}
+
+export interface TTSPayload{
+  text: string | undefined
+  user_id : string
+  voice?: string
 }
 
 export interface RegisteredPayload {
@@ -97,4 +110,9 @@ export interface ErrorPayload {
   message: string;
   timestamp: number;
   details?: any;
+}
+
+export interface ServerStatus {
+  status: string;
+  timestamp: number;
 }

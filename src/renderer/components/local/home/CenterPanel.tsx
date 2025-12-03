@@ -3,9 +3,12 @@ import { useSocket } from '@/context/socketContextProvider'
 import React, { useEffect } from 'react'
 import axios from "axios"
 import type { IAiResponsePayload } from 'types'
+import { useSparkTTS } from '@/context/sparkTTSContext'
+
 
 export default function CenterPanel() {
   const { socket, isConnected, on, emit, off } = useSocket()
+  const { speak, stop, isSpeaking } = useSparkTTS();
    const [status, setStatus] = React.useState<string>("Not started");
   
   const getAudio = async(text:string | undefined) => {
@@ -37,7 +40,6 @@ export default function CenterPanel() {
    audio.play();
   }
 
-
   const obj: IAiResponsePayload = {
   userQuery: "Spark open notepad",
   answer: "नोटपैड खोल रहा हूं, सर।",
@@ -59,7 +61,7 @@ export default function CenterPanel() {
     artist: "",
     topic: "",
     platforms: [],
-    app_name: "chrome",
+    app_name: "whatsapp",
     target: "",
     location: "",
     searchResults: [],
@@ -69,11 +71,17 @@ export default function CenterPanel() {
     },
     additional_info: {}
   }
-}
+  }
+  
+  const play = () => {
+    speak(
+      "कोई बात नहीं है, सर। सब ठीक हो जाएगा। क्या हुआ जो इतनी माफी मांग रहे हैं?"
+    );
+  }
 
   const hit = async () => {
     try {
-      await getAudio(obj.answer)
+    
        console.log("🟢 Calling window.electronApi.runPythonAction...");
 
        const res = await window.electronApi.runPythonAction(obj);
@@ -83,7 +91,6 @@ export default function CenterPanel() {
 
        if (res.status === "ok") {
          console.log("✅ Action completed:", res.result);
-         await getAudio(obj.actionCompletedMessage);
        } else {
          console.error("❌ Action failed:", res.message);
        }
@@ -93,30 +100,29 @@ export default function CenterPanel() {
     }
   }
 
-  // useEffect(() => {
-  //   console.log("htting the python subprocess now")
-  //   hit()
-  // }, [])
+  useEffect(() => {
+    emit("test-ws");
 
-  // useEffect(() => {
-  //   console.log("Socket", socket, isConnected)
-  //   if (!socket || !isConnected) return
-  //   emit("send-user-text-query", "Hello Spark Whats up?")
-  //   on("query-result", (data) => { 
-  //     console.log("query Result",data)
-  //   })
+    on("server-status", (data) => {
+      console.log("Server status received", data)
+      setStatus(data.status)
+    })
 
-  //   return () => {
-  //     off("query-result")
-  //   }
     
-  // }, [socket, isConnected, on, emit, off])
+    return () => {
+      off("server-status");
+    }
+    
+  }, [socket, isConnected, on, emit, off])
+  
   return (
     <div>
-      <Button onClick={() => hit()}>Click</Button>
+      <Button onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}>Click</Button>
       <div className="mt-4 p-2 bg-gray-900 rounded">
         <p className="text-sm">Status: {status}</p>
       </div>
     </div>
-  )
+  );
 }
+
+//  onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}

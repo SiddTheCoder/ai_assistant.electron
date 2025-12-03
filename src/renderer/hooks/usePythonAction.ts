@@ -1,12 +1,12 @@
 // src/renderer/hooks/usePythonAction.ts
 import { useState } from 'react';
-import type{ IPythonActionPayload, IPythonActionResponse } from '../../../types';
+import type{ IAiResponsePayload, IPythonActionResponse } from '../../../types';
 
 export function usePythonAction() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const execute = async (payload: IPythonActionPayload): Promise<IPythonActionResponse> => {
+  const execute = async (payload: IAiResponsePayload): Promise<IPythonActionResponse> => {
     setLoading(true);
     setError(null);
 

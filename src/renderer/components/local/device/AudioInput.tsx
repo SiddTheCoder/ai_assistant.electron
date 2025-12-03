@@ -27,8 +27,8 @@ export function AudioInput() {
   const [showSettings, setShowSettings] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // ✨ NEW: Track if backend is processing
-  const [recordingStartTime, setRecordingStartTime] = useState<number>(0); // ✨ NEW: Track recording start
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -41,8 +41,11 @@ export function AudioInput() {
   const audioChunksRef = useRef<Blob[]>([]);
   const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSpeakingRef = useRef(false);
-  const isProcessingRef = useRef(false); // ✨ NEW: Ref version for immediate access
-  const isRecordingRef = useRef(false); // ✨ NEW: Ref to track recording state reliably
+  const isProcessingRef = useRef(false);
+  const isRecordingRef = useRef(false);
+  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // Voice Activity Detection settings
   const SILENCE_THRESHOLD = 15;
@@ -115,9 +118,8 @@ export function AudioInput() {
   const handleVoiceActivity = (level: number) => {
     const levelPercentage = (level / 128) * 100;
 
-    // ✨ Don't start recording if backend is processing
+    // Don't start recording if backend is processing
     if (isProcessingRef.current) {
-      console.log("🔒 Backend is processing, ignoring voice activity");
       return;
     }
 
@@ -132,7 +134,7 @@ export function AudioInput() {
         silenceTimeoutRef.current = null;
       }
 
-      // Start recording if not already recording (use ref!)
+      // Start recording if not already recording
       if (!isRecordingRef.current) {
         startRecording();
       }
@@ -161,7 +163,6 @@ export function AudioInput() {
   };
 
   const handleSilenceDetected = () => {
-    console.log("🔇 Silence detected, stopping recording");
     isSpeakingRef.current = false;
     setIsSpeaking(false);
 
@@ -171,36 +172,28 @@ export function AudioInput() {
       silenceTimeoutRef.current = null;
     }
 
-    // ✅ Check MediaRecorder state, not isRecording state
+    // Check MediaRecorder state
     const recorder = mediaRecorderRef.current;
-    if (recorder && (recorder.state === "recording" || recorder.state === "paused")) {
-      console.log("📤 Stopping recording to send audio...", {
-        state: recorder.state,
-        chunks: audioChunksRef.current.length
-      });
+    if (
+      recorder &&
+      (recorder.state === "recording" || recorder.state === "paused")
+    ) {
       stopRecording();
-    } else {
-      console.warn("⚠️ Not recording on silence:", { 
-        hasRecorder: !!recorder,
-        state: recorder?.state
-      });
     }
   };
 
   const startRecording = () => {
-    if (!streamRef.current || isRecordingRef.current || isProcessingRef.current) {
-      console.log("⚠️ Cannot start recording:", { 
-        hasStream: !!streamRef.current, 
-        isRecording: isRecordingRef.current, 
-        isProcessing: isProcessingRef.current 
-      });
+    if (
+      !streamRef.current ||
+      isRecordingRef.current ||
+      isProcessingRef.current
+    ) {
       return;
     }
 
     try {
-      // ✨ Clear previous chunks at start
+      // Clear previous chunks at start
       audioChunksRef.current = [];
-      console.log("🧹 Cleared previous audio chunks");
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -220,22 +213,15 @@ export function AudioInput() {
       };
 
       mediaRecorder.onstop = async () => {
-        console.log("📼 MediaRecorder stopped, preparing to send audio...", {
-          chunks: audioChunksRef.current.length,
-          totalSize: audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
-        });
-        
-        // ✅ CRITICAL: Update BOTH state and ref
+        // Update BOTH state and ref
         isRecordingRef.current = false;
         setIsRecording(false);
-        
-        // ✅ Then send audio
+
+        // Then send audio
         if (audioChunksRef.current.length > 0) {
           await sendAudioToBackend();
-        } else {
-          console.warn("⚠️ No audio chunks to send on stop");
         }
-        
+
         mediaRecorderRef.current = null;
       };
 
@@ -246,18 +232,12 @@ export function AudioInput() {
         audioChunksRef.current = [];
       };
 
-      mediaRecorder.onstart = () => {
-        console.log("✅ MediaRecorder started");
-      };
-
       // Request data every 100ms
       mediaRecorder.start(100);
       mediaRecorderRef.current = mediaRecorder;
       isRecordingRef.current = true;
       setIsRecording(true);
-      setRecordingStartTime(Date.now()); // ✨ Track start time
-
-      console.log("🎙️ Recording started", { mimeType, state: mediaRecorder.state });
+      setRecordingStartTime(Date.now());
     } catch (error) {
       console.error("❌ Error starting recording:", error);
       isRecordingRef.current = false;
@@ -267,36 +247,20 @@ export function AudioInput() {
 
   const stopRecording = () => {
     const recorder = mediaRecorderRef.current;
-    
-    if (!recorder) {
-      console.log("⚠️ Cannot stop recording: no recorder");
+
+    if (!recorder || recorder.state === "inactive") {
       return;
     }
 
-    // ✅ Check the actual MediaRecorder state, not our isRecording state
-    if (recorder.state === "inactive") {
-      console.log("⚠️ MediaRecorder already inactive");
-      return;
-    }
-
-    // ✅ Enforce minimum recording duration
+    // Enforce minimum recording duration
     const recordingDuration = Date.now() - recordingStartTime;
     if (recordingDuration < 500) {
-      console.log(`⏱️ Recording too short (${recordingDuration}ms), waiting...`);
       return;
     }
 
-    console.log("🛑 Stopping recording...", { 
-      state: recorder.state, 
-      chunks: audioChunksRef.current.length,
-      duration: recordingDuration 
-    });
-
     try {
-      // ✅ CRITICAL: Stop the recorder first, THEN update state in onstop callback
       if (recorder.state === "recording" || recorder.state === "paused") {
-        recorder.stop(); // This will trigger onstop → which sets isRecording to false
-        console.log("✅ MediaRecorder.stop() called");
+        recorder.stop();
       }
     } catch (error) {
       console.error("❌ Error stopping recording:", error);
@@ -306,9 +270,8 @@ export function AudioInput() {
   };
 
   const sendAudioToBackend = async () => {
-    // ✨ CRITICAL: Validate we have audio data
+    // Validate we have audio data
     if (audioChunksRef.current.length === 0) {
-      console.warn("⚠️ No audio chunks to send");
       return;
     }
 
@@ -318,9 +281,8 @@ export function AudioInput() {
       return;
     }
 
-    // ✨ Check if already processing
+    // Check if already processing
     if (isProcessingRef.current) {
-      console.warn("⚠️ Already processing a request, skipping...");
       audioChunksRef.current = [];
       return;
     }
@@ -331,70 +293,80 @@ export function AudioInput() {
         type: mediaRecorderRef.current?.mimeType || "audio/webm;codecs=opus",
       });
 
-      // ✨ Validate audio size
+      // Validate audio size
       if (audioBlob.size < 1000) {
-        console.warn("⚠️ Audio too small, likely empty:", audioBlob.size);
         audioChunksRef.current = [];
         return;
       }
 
-      console.log("📤 Sending audio:", {
-        size: audioBlob.size,
-        type: audioBlob.type,
-        chunks: audioChunksRef.current.length,
-      });
-
-      // ✨ Set processing state BEFORE sending
+      // Set processing state BEFORE sending
       isProcessingRef.current = true;
       setIsProcessing(true);
+
+      // Safety timeout: reset after 30 seconds if no response
+      processingTimeoutRef.current = setTimeout(() => {
+        console.warn("⏰ Processing timeout - resetting state");
+        isProcessingRef.current = false;
+        setIsProcessing(false);
+      }, 30000);
 
       // Convert to Base64
       const base64Audio = await blobToBase64(audioBlob);
 
-      // ✨ Send to backend
+      // Send to backend
       emit("send-user-voice-query", {
         audio: base64Audio,
         mimeType: audioBlob.type,
         timestamp: Date.now(),
         duration: audioChunksRef.current.length * 100,
       });
-
-      console.log("✅ Audio sent successfully, waiting for response...");
-      
     } catch (error) {
       console.error("❌ Error sending audio:", error);
       // Reset processing state on error
       isProcessingRef.current = false;
       setIsProcessing(false);
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
     } finally {
-      // ✨ ALWAYS clear chunks after sending
+      // ALWAYS clear chunks after sending
       audioChunksRef.current = [];
     }
   };
 
-  // ✨ Listen for query results to reset processing state
+  // Listen for query results to reset processing state
   useEffect(() => {
     if (socket && isConnected) {
-      const handleQueryResult = (data: any) => {
-        console.log("📨 Query result received:", data);
-        
-        // ✨ Reset processing state
+      const resetProcessing = () => {
+        // Clear timeout
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
+        }
+
+        // Reset processing state
         isProcessingRef.current = false;
         setIsProcessing(false);
-        
-        console.log("🔓 Ready for next recording");
       };
 
+      // Listen to ALL possible completion events
+      const handleQueryResult = () => resetProcessing();
+      const handleTTSEnd = () => resetProcessing();
+      const handleQueryError = () => resetProcessing();
+      const handleError = () => resetProcessing();
+
+      // Register all listeners
       on("query-result", handleQueryResult);
-      
-      // ✨ Also listen for processing status
-      on("processing", (data: any) => {
-        console.log("⏳ Backend processing:", data.status);
-      });
+      on("tts-end", handleTTSEnd);
+      on("query-error", handleQueryError);
+      on("error", handleError);
 
       return () => {
         off("query-result", handleQueryResult);
-        off("processing");
+        off("tts-end", handleTTSEnd);
+        off("query-error", handleQueryError);
+        off("error", handleError);
       };
     }
   }, [socket, isConnected, on, off]);
@@ -452,8 +424,6 @@ export function AudioInput() {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       setupAudioVisualization(stream);
-      
-      console.log("🎤 Listening started");
     } catch (error) {
       console.error("❌ Error starting audio:", error);
       if (isMicrophoneListening) {
@@ -463,14 +433,12 @@ export function AudioInput() {
   };
 
   const stopListening = async () => {
-    console.log("🛑 Stopping listening...");
-
-    // ✨ Stop recording if active (check ref!)
+    // Stop recording if active
     if (isRecordingRef.current && mediaRecorderRef.current) {
       stopRecording();
-      
+
       // Wait briefly for the recording to finish
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
     // Clear silence timeout
@@ -502,8 +470,6 @@ export function AudioInput() {
         .forEach((track: MediaStreamTrack) => track.stop());
       streamRef.current = null;
     }
-    
-    console.log("✅ Listening stopped");
   };
 
   // Cleanup on unmount

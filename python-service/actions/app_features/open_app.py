@@ -144,7 +144,6 @@ def open_app(payload: Dict[str, Any]) -> Dict[str, Any]:
         
         app_name = action_details.get("app_name", "").strip()
         platforms = action_details.get("platforms", [])
-        query = action_details.get("query", "")
         
         logger.info(f"open_app called with app_name: '{app_name}', platforms: {platforms}")
         

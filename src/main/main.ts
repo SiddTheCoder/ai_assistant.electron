@@ -12,7 +12,11 @@ import { IAiResponsePayload } from "../../types.js";
 let pythonProcess: ChildProcess | null = null;
 
 function startPythonService() {
-  const scriptPath = path.join(process.cwd(), "python-service", "main_service.py");
+  const scriptPath = path.join(
+    process.cwd(),
+    "python-service",
+    "main_service.py"
+  );
   const pythonCommand = process.platform === "win32" ? "python" : "python3";
 
   console.log("=== STARTING PYTHON SERVICE ===");
@@ -20,9 +24,9 @@ function startPythonService() {
   console.log("Python command:", pythonCommand);
 
   pythonProcess = spawn(pythonCommand, [scriptPath], {
-    stdio: ["pipe", "pipe", "pipe"]
+    stdio: ["pipe", "pipe", "pipe"],
   });
-  
+
   console.log("Python Process Spawned with PID:", pythonProcess.pid);
 
   if (pythonProcess.stdout) {
@@ -33,7 +37,21 @@ function startPythonService() {
 
   if (pythonProcess.stderr) {
     pythonProcess.stderr.on("data", (data) => {
-      console.error(`Python stderr: ${data}`);
+      const message = data.toString();
+
+      // Check for progress updates
+      if (message.includes("PROGRESS:")) {
+        const match = message.match(/PROGRESS:(\d+)%/);
+        if (match) {
+          const progress = parseInt(match[1]);
+          console.log(`⏳ Action Progress: ${progress}%`);
+
+          // Send to renderer if you want to show progress bar
+          // ipcWebContentSend("pythonProgress", mainWindow.webContents, { progress });
+        }
+      } else {
+        console.error(`Python stderr: ${data}`);
+      }
     });
   }
 
@@ -75,7 +93,7 @@ app.on("ready", () => {
   if (isDevMode()) {
     console.log("Development window");
     mainWindow.webContents.openDevTools(); // openDevTools
-    mainWindow.loadURL("http://localhost:3000");
+    mainWindow.loadURL("http://localhost:5123");
   } else {
     console.log("Production window");
     mainWindow.loadFile(path.join(app.getAppPath(), "/dist-react/index.html"));
@@ -196,41 +214,97 @@ function sendToPython(data: any): Promise<any> {
   console.log("📤 sendToPython called with:", data);
 
   if (!pythonProcess) {
-    console.error("❌ pythonProcess is null");
     return Promise.reject(new Error("Python process is not running"));
   }
 
   return new Promise((resolve, reject) => {
     if (!pythonProcess?.stdout || !pythonProcess?.stdin) {
-      console.error("❌ Python process streams unavailable");
       return reject(new Error("Python process streams are not available"));
     }
 
-    const timeout = setTimeout(() => {
-      console.error("⏰ Python response timeout");
-      reject(new Error("Python response timeout"));
-    }, 15000); // ⬅️ INCREASED FROM 5000 to 15000 (15 seconds)
+    // ============================================
+    // SMART TIMEOUT CALCULATION
+    // ============================================
+    const contentLength = data?.answerDetails?.content?.length || 0;
+    const actionType = data?.actionDetails?.type || "unknown";
 
-    // Listen for data ONCE
+    // Base timeout for app opening, window focus, etc.
+    const baseTimeout = 30000; // 30 seconds
+
+    // Additional time for typing (60ms per character)
+    const typingTime = contentLength * 60;
+
+    // Total timeout with 20% safety buffer
+    const calculatedTimeout = (baseTimeout + typingTime) * 1.2;
+
+    // Cap at reasonable maximum (5 minutes)
+    const finalTimeout = Math.min(calculatedTimeout, 300000);
+
+    // console.log(`⏱️ Timeout settings:
+    //   Action: ${actionType}
+    //   Content length: ${contentLength} chars
+    //   Base timeout: ${baseTimeout / 1000}s
+    //   Typing time: ${typingTime / 1000}s
+    //   Final timeout: ${finalTimeout / 1000}s`);
+
+    const timeout = setTimeout(() => {
+      pythonProcess?.stdout?.removeListener("data", dataHandler);
+      console.error(`⏱️ Action timed out after ${finalTimeout / 1000}s`);
+      console.error(`💡 This might indicate:
+        1. The action is still executing (increase timeout)
+        2. Python crashed (check Python logs)
+        3. Response wasn't sent (check Python code)`);
+      reject(
+        new Error(
+          `Action timed out after ${
+            finalTimeout / 1000
+          }s - action may still be executing`
+        )
+      );
+    }, finalTimeout);
+
+    let buffer = "";
+
     const dataHandler = (raw: Buffer) => {
-      clearTimeout(timeout);
-      console.log("📥 Received raw data from Python:", raw.toString());
+      const chunk = raw.toString();
+      console.log(
+        "📨 Received chunk from Python:",
+        chunk.substring(0, 100) + (chunk.length > 100 ? "..." : "")
+      );
+      buffer += chunk;
+
+      // Try to parse accumulated buffer
       try {
-        const parsed = JSON.parse(raw.toString());
+        const parsed = JSON.parse(buffer);
+        clearTimeout(timeout);
+        pythonProcess?.stdout?.removeListener("data", dataHandler);
         console.log("✅ Parsed Python response:", parsed);
         resolve(parsed);
-      } catch (error) {
-        console.error("❌ JSON parse error:", error);
-        reject(error);
+        buffer = ""; // Clear buffer after successful parse
+      } catch (e) {
+        // Incomplete JSON, continue waiting
+        console.log(
+          `⏳ Waiting for more data... (buffer length: ${buffer.length})`
+        );
       }
     };
 
-    // Remove any existing listeners to prevent multiple responses
+    // Clean up any existing listeners
     pythonProcess.stdout.removeAllListeners("data");
-    pythonProcess.stdout.once("data", dataHandler);
+    pythonProcess.stdout.on("data", dataHandler);
 
-    const jsonData = JSON.stringify(data) + "\n";
-    console.log("📤 Writing to Python stdin:", jsonData);
-    pythonProcess.stdin.write(jsonData);
+    try {
+      const jsonData = JSON.stringify(data) + "\n";
+      console.log(
+        "📝 Writing to Python stdin:",
+        jsonData.substring(0, 200) + "..."
+      );
+      pythonProcess.stdin.write(jsonData);
+      console.log("✅ Data written to Python");
+    } catch (err) {
+      clearTimeout(timeout);
+      pythonProcess?.stdout?.removeListener("data", dataHandler);
+      reject(new Error(`Failed to write to Python: ${err}`));
+    }
   });
 }

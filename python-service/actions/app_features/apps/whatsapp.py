@@ -6,6 +6,7 @@ import os
 from typing import Dict, Any, List
 from .base import BaseApp
 from ...utils.process_manager import ProcessManager
+from ...utils.whatsapp_ui import WhatsAppUISender
 
 logger = logging.getLogger(__name__)
 
@@ -61,30 +62,30 @@ class WhatsAppApp(BaseApp):
             # Try to find and launch executable
             executable = self.find_executable()
             
-            if executable:
-                logger.info(f"Found WhatsApp at: {executable}")
+            # if executable:
+            #     logger.info(f"Found WhatsApp at: {executable}")
                 
-                if self.launch_app(executable):
-                    # Wait for process to start
-                    if ProcessManager.wait_for_process(self.process_names, self.wait_timeout):
-                        return {
-                            "success": True,
-                            "app_name": self.app_name,
-                            "message": f"Opened {self.app_name}",
-                            "executable": executable
-                        }
-                    else:
-                        return {
-                            "success": False,
-                            "app_name": self.app_name,
-                            "error": f"{self.app_name} launched but process not detected",
-                            "executable": executable
-                        }
+            #     if self.launch_app(executable):
+            #         # Wait for process to start
+            #         if ProcessManager.wait_for_process(self.process_names, self.wait_timeout):
+            #             return {
+            #                 "success": True,
+            #                 "app_name": self.app_name,
+            #                 "message": f"Opened {self.app_name}",
+            #                 "executable": executable
+            #             }
+            #         else:
+            #             return {
+            #                 "success": False,
+            #                 "app_name": self.app_name,
+            #                 "error": f"{self.app_name} launched but process not detected",
+            #                 "executable": executable
+            #             }
             
-            # Fallback: Try Windows Store app launch
-            if platform.system() == "Windows":
-                logger.info("Trying Windows Store WhatsApp launch...")
-                return self._launch_windows_store_app()
+            # # Fallback: Try Windows Store app launch
+            # if platform.system() == "Windows":
+            #     logger.info("Trying Windows Store WhatsApp launch...")
+            #     return self._launch_windows_store_app()
             
             # Fallback: Open WhatsApp Web
             logger.warning("WhatsApp desktop not found, opening WhatsApp Web...")
@@ -142,8 +143,12 @@ class WhatsAppApp(BaseApp):
     def _open_whatsapp_web(self) -> Dict[str, Any]:
         """Fallback: Open WhatsApp Web in browser"""
         try:
-            import webbrowser
-            webbrowser.open("https://web.whatsapp.com")
+           
+            # import webbrowser
+            # webbrowser.open("https://web.whatsapp.com")
+
+            # if(self.payload.get("number")):
+            WhatsAppUISender.send("9824870400","Hello bhai")
             
             return {
                 "success": True,

@@ -1,4 +1,3 @@
-# python-service/actions/utils/process_manager.py
 import logging
 import time
 import psutil
@@ -80,19 +79,19 @@ class ProcessManager:
     
     @staticmethod
     def _focus_window_windows(process_names: List[str]) -> bool:
-        """Windows-specific window focusing with proper restoration"""
+        """Windows-specific window focusing - FIXED to prevent resize"""
         try:
             import win32gui
             import win32con
             import win32process
-            
+
             def find_window_by_process(hwnd, windows):
                 if win32gui.IsWindowVisible(hwnd):
                     _, pid = win32process.GetWindowThreadProcessId(hwnd)
                     try:
                         proc = psutil.Process(pid)
                         proc_name = proc.name().lower()
-                        
+
                         for target_name in process_names:
                             if target_name.lower().replace('.exe', '') in proc_name:
                                 windows.append(hwnd)
@@ -100,48 +99,54 @@ class ProcessManager:
                     except:
                         pass
                 return True
-            
+
             windows = []
             win32gui.EnumWindows(find_window_by_process, windows)
-            
-            if windows:
-                hwnd = windows[0]
-                
-                # Check if window is minimized
-                if win32gui.IsIconic(hwnd):
-                    logger.info("Window is minimized, restoring...")
-                    # Restore from minimized state
-                    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-                    time.sleep(0.2)
-                
-                # Bring to front
+
+            if not windows:
+                logger.warning(f"No window found for process: {process_names}")
+                return False
+
+            hwnd = windows[0]
+
+            # Check if minimized
+            if win32gui.IsIconic(hwnd):
+                logger.info("Window is minimized, restoring...")
+                win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+                time.sleep(0.2)
+            else:
+                # If not minimized, just ensure it's visible
                 win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
-                time.sleep(0.1)
-                
-                # Set as foreground window (this brings it to front)
+
+            time.sleep(0.05)
+
+            # Bring to foreground using simpler method
+            try:
+                # This is less aggressive and doesn't cause resize
+                win32gui.BringWindowToTop(hwnd)
                 win32gui.SetForegroundWindow(hwnd)
-                
-                # Additional: Make sure it's on top
-                win32gui.SetWindowPos(
-                    hwnd,
-                    win32con.HWND_TOP,
-                    0, 0, 0, 0,
-                    win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW
-                )
-                
-                logger.info(f"Focused and brought window to front: {process_names[0]}")
-                return True
-            
-            logger.warning(f"No window found for process: {process_names}")
-            return False
-                
+            except Exception as e:
+                logger.debug(f"SetForegroundWindow failed (expected on some systems): {e}")
+                # Fallback: Try Alt trick to gain foreground permission
+                try:
+                    import win32api
+                    import win32com.client
+                    shell = win32com.client.Dispatch("WScript.Shell")
+                    shell.SendKeys('%')
+                    win32gui.SetForegroundWindow(hwnd)
+                except:
+                    pass
+
+            logger.info(f"Focused window: {process_names[0]}")
+            return True
+
         except ImportError:
             logger.warning("pywin32 not installed, cannot focus window on Windows")
             return False
         except Exception as e:
             logger.error(f"Error focusing window on Windows: {e}")
             return False
-    
+
     @staticmethod
     def _focus_window_macos(process_names: List[str]) -> bool:
         """macOS window focusing"""
