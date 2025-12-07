@@ -1,5 +1,9 @@
 import { systemPreferences, BrowserWindow } from "electron";
-import { IMediaDevices, IMediaPermissions, IMediaDevice } from "../../../types.js";
+import {
+  IMediaDevices,
+  IMediaPermissions,
+  IMediaDevice,
+} from "../../../types.js";
 
 export async function getMediaDevices(
   mainWindow: BrowserWindow
@@ -41,41 +45,98 @@ export async function getMediaDevices(
   }
 }
 
-export async function getMediaPermissions(
+// Check permissions WITHOUT requesting (no prompts)
+export async function checkMediaPermissions(
   mainWindow: BrowserWindow
 ): Promise<IMediaPermissions> {
   try {
-    // Request permissions through the renderer process
+    const result = await mainWindow.webContents.executeJavaScript(`
+      Promise.all([
+        navigator.permissions.query({ name: 'camera' })
+          .then(result => result.state === 'granted')
+          .catch(() => false),
+        navigator.permissions.query({ name: 'microphone' })
+          .then(result => result.state === 'granted')
+          .catch(() => false)
+      ]).then(([camera, microphone]) => ({ 
+        camera, 
+        microphone,
+        speaker: true // Speakers don't need permission in browsers
+      }))
+    `);
+
+    console.log("📋 Permission check result:", result);
+    return result;
+  } catch (error) {
+    console.error("Error checking permissions:", error);
+    return {
+      camera: false,
+      microphone: false,
+      speaker: false,
+    };
+  }
+}
+
+// Request permissions (WILL trigger browser prompts)
+export async function requestMediaPermissions(
+  mainWindow: BrowserWindow
+): Promise<IMediaPermissions> {
+  try {
+    console.log("🔐 Requesting media permissions...");
+
     const result = await mainWindow.webContents.executeJavaScript(`
       Promise.all([
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
+            console.log("✅ Camera permission granted");
             stream.getTracks().forEach(track => track.stop());
             return true;
           })
-          .catch(() => false),
+          .catch((err) => {
+            console.log("❌ Camera permission denied:", err.message);
+            return false;
+          }),
         navigator.mediaDevices.getUserMedia({ audio: true })
           .then(stream => {
+            console.log("✅ Microphone permission granted");
             stream.getTracks().forEach(track => track.stop());
             return true;
           })
-          .catch(() => false)
-      ]).then(([camera, microphone]) => ({ camera, microphone }))
+          .catch((err) => {
+            console.log("❌ Microphone permission denied:", err.message);
+            return false;
+          })
+      ]).then(([camera, microphone]) => ({ 
+        camera, 
+        microphone,
+        speaker: true // Speakers are always available
+      }))
     `);
 
+    console.log("🔐 Permission request result:", result);
     return result;
   } catch (error) {
     console.error("Error requesting media permissions:", error);
     return {
       camera: false,
       microphone: false,
+      speaker: false,
     };
   }
 }
 
-export async function checkMediaPermissions(): Promise<IMediaPermissions> {
+// Legacy function - now uses checkMediaPermissions (non-intrusive)
+export async function getMediaPermissions(
+  mainWindow: BrowserWindow
+): Promise<IMediaPermissions> {
+  return checkMediaPermissions(mainWindow);
+}
+
+// System-level permission check (macOS only)
+export async function checkSystemPermissions(): Promise<IMediaPermissions> {
   let camera = false;
   let microphone = false;
+  let speaker = true; // Speakers don't need permissions
 
   if (process.platform === "darwin") {
     // macOS
@@ -84,8 +145,13 @@ export async function checkMediaPermissions(): Promise<IMediaPermissions> {
 
     camera = cameraStatus === "granted";
     microphone = micStatus === "granted";
+
+    console.log("🍎 macOS system permissions:", {
+      camera: cameraStatus,
+      microphone: micStatus,
+    });
   } else if (process.platform === "win32") {
-    // Windows - permissions are typically granted at runtime
+    // Windows - permissions granted at runtime
     camera = true;
     microphone = true;
   } else {
@@ -94,5 +160,5 @@ export async function checkMediaPermissions(): Promise<IMediaPermissions> {
     microphone = true;
   }
 
-  return { camera, microphone };
+  return { camera, microphone, speaker };
 }

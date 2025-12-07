@@ -22,7 +22,7 @@ export default function CenterPanel() {
     // })
     console.log("htting api now")
    const res = await axios.post(
-     `${import.meta.env.VITE_API_URL}/api/tts`,
+     `${import.meta.env.VITE_API_BASE_URL}/api/tts`,
      {
        text: text,
      },

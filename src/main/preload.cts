@@ -16,6 +16,13 @@ contextBridge.exposeInMainWorld("electronApi", {
   getMediaDevices: () => ipcInvoke("getMediaDevices"),
   getMediaPermissions: () => ipcInvoke("getMediaPermissions"),
   checkMediaPermission: () => ipcInvoke("checkMediaPermission"),
+  requestMediaPermissions: () => ipcInvoke("requestMediaPermissions"),
+  checkSystemPermissions: () => ipcInvoke("checkSystemPermissions"),
+
+  //token Management APIs
+  saveToken: (ACCOUNT_NAME: string, token: string) => ipcInvoke("saveToken", { ACCOUNT_NAME, token }),
+  getToken: (ACCOUNT_NAME: string) => ipcInvoke("getToken", { ACCOUNT_NAME }),
+  deleteToken: (ACCOUNT_NAME: string) => ipcInvoke("deleteToken", { ACCOUNT_NAME }),
 
   //python Automation API
    runPythonAction: (payload: IAiResponsePayload) => ipcInvoke("runPythonAction", payload),

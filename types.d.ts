@@ -22,6 +22,7 @@ export interface IMediaDevices {
 export interface IMediaPermissions {
   camera: boolean;
   microphone: boolean;
+  speaker: boolean;
 }
 
 export interface IMediaStream {
@@ -89,6 +90,7 @@ export interface IPythonActionResponse {
   message?: string;
 }
 
+
 // Payload Mapper - FIXED: Now includes parameters
 export type IEventPayloadMapping = {
   frameWindowAction: IFrameWindowAction;
@@ -99,8 +101,15 @@ export type IEventPayloadMapping = {
   getMediaDevices: IMediaDevices;
   getMediaPermissions: IMediaPermissions;
   checkMediaPermission: IMediaPermissions;
+  requestMediaPermissions: IMediaPermissions;
+  checkSystemPermissions: IMediaPermissions;
   startMediaStream: IMediaStream;
   stopMediaStream: void;
+
+  // Token Management
+  saveToken: void;
+  getToken: string | null;
+  deleteToken: void;
 
   // Python Automation - This defines what the handler receives
   runPythonAction: IPythonActionResponse;
@@ -119,6 +128,14 @@ declare global {
       getMediaDevices: () => Promise<IMediaDevices>;
       getMediaPermissions: () => Promise<IMediaPermissions>;
       checkMediaPermission: () => Promise<IMediaPermissions>;
+      requestMediaPermissions: () => Promise<IMediaPermissions>;
+      checkSystemPermissions: () => Promise<IMediaPermissions>;
+
+
+      // token management APIs
+      saveToken: (ACCOUNT_NAME: string, token: string) => Promise<void>;
+      getToken: (ACCOUNT_NAME: string) => Promise<string | null>;
+      deleteToken: (ACCOUNT_NAME: string) => Promise<void>;
 
       // Python Automation API
       runPythonAction: (payload: IAiResponsePayload) => Promise<IPythonActionResponse>;

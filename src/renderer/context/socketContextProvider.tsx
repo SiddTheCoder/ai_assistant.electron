@@ -55,7 +55,8 @@ export const SocketProvider = ({
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
-  const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://127.0.0.1:8000";
+  const socketUrl =
+    import.meta.env.VITE_API_SOCKET_URL || "http://127.0.0.1:8000";
 
   console.log("Socket URL:", socketUrl);
 

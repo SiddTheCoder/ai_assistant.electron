@@ -4,7 +4,7 @@ import { getPreloadPath, getUIPath } from "./utils/pathResolver.js";
 import { isDevMode } from "./utils/isDevMode.js";
 import { createTray } from "./utils/createTray.js";
 import { ipcMainHandle, ipcMainOn, ipcWebContentSend } from "./utils/ipcUtils.js";
-import { checkMediaPermissions, getMediaDevices, getMediaPermissions } from "./utils/mediaManager.js";
+import { checkMediaPermissions, checkSystemPermissions, getMediaDevices, getMediaPermissions, requestMediaPermissions } from "./utils/mediaManager.js";
 import { spawn, ChildProcess } from "node:child_process"
 import { IAiResponsePayload } from "../../types.js";
 
@@ -92,7 +92,7 @@ app.on("ready", () => {
 
   if (isDevMode()) {
     console.log("Development window");
-    mainWindow.webContents.openDevTools(); // openDevTools
+    // mainWindow.webContents.openDevTools(); // openDevTools
     mainWindow.loadURL("http://localhost:5123");
   } else {
     console.log("Production window");
@@ -102,7 +102,24 @@ app.on("ready", () => {
   //listen and handle the invoked function (media APIs)
   ipcMainHandle("getMediaPermissions", () => getMediaPermissions(mainWindow));
   ipcMainHandle("getMediaDevices", () => getMediaDevices(mainWindow));
-  ipcMainHandle("checkMediaPermission", () => checkMediaPermissions());
+  ipcMainHandle("checkMediaPermission", () => checkMediaPermissions(mainWindow));
+  ipcMainHandle("requestMediaPermissions", () => requestMediaPermissions(mainWindow));
+  ipcMainHandle("checkSystemPermissions", () => checkSystemPermissions());
+
+  // token management handlers
+  ipcMainHandle("saveToken", async (_event, { ACCOUNT_NAME, token }) => {
+    const { saveToken } = await import("./utils/keytarTokenManagement.js");
+    return await saveToken(ACCOUNT_NAME, token);
+  });
+
+  ipcMainHandle("getToken", async (_event, { ACCOUNT_NAME }) => {
+    const { getToken } = await import("./utils/keytarTokenManagement.js");
+    return await getToken(ACCOUNT_NAME);
+  });
+  ipcMainHandle("deleteToken", async (_event, { ACCOUNT_NAME }) => {
+    const { deleteToken } = await import("./utils/keytarTokenManagement.js");
+    return await deleteToken(ACCOUNT_NAME);
+  });
 
   //frameWindowAction Apis
   ipcMainOn("frameWindowAction", (payload) => {
