@@ -112,7 +112,10 @@ export interface ErrorPayload {
   details?: any;
 }
 
+export type ServerStatusFlag = "INFO" | "WARN" | "ERROR";
+
 export interface ServerStatus {
   status: string;
-  timestamp: number;
+  timestamp: string; // ISO string from backend (UTC)
+  flag: ServerStatusFlag;
 }

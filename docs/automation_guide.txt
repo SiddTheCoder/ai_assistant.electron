@@ -1,0 +1,124 @@
+🧠 Automation Capability Map (Everything Automatable)
+
+Rule of thumb:
+API > Native SDK > Browser Automation > OS Automation
+
+🖥️ SYSTEM / OS AUTOMATION
+| Task            | Example           | Best Tool                    |
+| --------------- | ----------------- | ---------------------------- |
+| Open app        | Chrome, VS Code   | `subprocess`, `os`, `psutil` |
+| Close app       | Kill process      | `psutil`                     |
+| Volume control  | Mute / unmute     | `pycaw` (Windows)            |
+| Brightness      | Increase/decrease | `screen-brightness-control`  |
+| Power actions   | Shutdown, sleep   | `os`, `ctypes`               |
+| Clipboard       | Copy / paste      | `pyperclip`                  |
+| Keyboard typing | Auto type         | `pyautogui`                  |
+| Mouse control   | Click, drag       | `pyautogui`                  |
+| File explorer   | Open folders      | `os.startfile`               |
+| File ops        | Rename, move      | `os`, `shutil`               |
+
+🎧 AUDIO / MEDIA AUTOMATION
+| Task           | Example         | Best Tool                |
+| -------------- | --------------- | ------------------------ |
+| Play music     | Spotify / local | Spotify API / VLC CLI    |
+| Pause / resume | Media keys      | `pyautogui`              |
+| Change track   | Next / previous | Media APIs               |
+| System mute    | Toggle mute     | `pycaw`                  |
+| Record mic     | Voice input     | `sounddevice`, `pyaudio` |
+| Text → Speech  | AI speaking     | `pyttsx3`, TTS APIs      |
+| Speech → Text  | Voice commands  | Whisper                  |
+
+📷 CAMERA / VISION AUTOMATION
+| Task              | Example       | Best Tool          |
+| ----------------- | ------------- | ------------------ |
+| Open camera       | Webcam        | `opencv-python`    |
+| Take photo        | Snapshot      | `opencv-python`    |
+| Record video      | Webcam record | `opencv-python`    |
+| Face detection    | Identify user | OpenCV / MediaPipe |
+| Emotion detection | Mood          | ML model           |
+| Screen capture    | Screenshot    | `mss`, `pyautogui` |
+| OCR               | Read text     | Tesseract OCR      |
+
+🌐 WEB AUTOMATION
+| Task             | Example         | Best Tool             |
+| ---------------- | --------------- | --------------------- |
+| Open website     | Google, GitHub  | Playwright            |
+| Login automation | Forms           | Playwright            |
+| Search query     | Google search   | Playwright / API      |
+| Download files   | PDFs, ZIPs      | Playwright            |
+| Web scraping     | Data extraction | Playwright / Requests |
+| Fill forms       | Auto submit     | Playwright            |
+| Handle SPA sites | React apps      | Playwright            |
+| Captcha fallback | Click images    | PyAutoGUI             |
+
+📡 NETWORK / INTERNET TASKS
+| Task            | Example        | Best Tool           |
+| --------------- | -------------- | ------------------- |
+| API calls       | Fetch data     | `requests`, `httpx` |
+| Ping devices    | Network check  | `subprocess`        |
+| Download/upload | Files          | `requests`          |
+| Webhooks        | Receive events | FastAPI             |
+| Tunnels         | Public access  | ngrok               |
+
+📞 COMMUNICATION AUTOMATION
+| Task               | Example        | Best Tool        |
+| ------------------ | -------------- | ---------------- |
+| Send email         | Gmail          | SMTP / Gmail API |
+| Read email         | Inbox scan     | IMAP             |
+| WhatsApp msg       | Auto send      | Twilio / Web     |
+| Phone call         | Trigger call   | Twilio           |
+| SMS                | OTP, alerts    | Twilio           |
+| Notifications      | Desktop alerts | `plyer`          |
+| Push notifications | Mobile         | Firebase         |
+
+📁 DATA / DOCUMENT AUTOMATION
+| Task          | Example      | Best Tool                  |
+| ------------- | ------------ | -------------------------- |
+| Create docs   | PDF, Word    | `reportlab`, `python-docx` |
+| Read PDFs     | Extract text | `pdfplumber`               |
+| Excel ops     | Reports      | `openpyxl`, `pandas`       |
+| Database CRUD | MongoDB      | Motor                      |
+| Search data   | Semantic     | Vector DB + embeddings     |
+| Backup files  | Auto backup  | `shutil`, cron             |
+
+🤖 AI-POWERED TASKS
+| Task                | Example             | Best Tool        |
+| ------------------- | ------------------- | ---------------- |
+| Chat assistant      | Conversations       | LLM APIs         |
+| Memory recall       | Past context        | Vector DB        |
+| Intent detection    | “Open Chrome”       | NLP              |
+| Tool selection      | Decide automation   | Rule engine + AI |
+| Image understanding | Screenshot analysis | Vision models    |
+| Voice assistant     | Talk to system      | Whisper + TTS    |
+
+
+🧩 DESKTOP APP AUTOMATION (Hard Mode)
+| Task         | Example        | Best Tool |
+| ------------ | -------------- | --------- |
+| Legacy apps  | ERP tools      | PyAutoGUI |
+| Java apps    | Old UI         | PyAutoGUI |
+| File dialogs | Upload windows | PyAutoGUI |
+| Non-HTML UI  | Canvas apps    | PyAutoGUI |
+
+Never start with PyAutoGUI
+
+Correct order:
+
+1️⃣ API
+2️⃣ Native library
+3️⃣ Browser automation (Playwright)
+4️⃣ OS automation (PyAutoGUI)
+
+How this fits YOUR architecture (important)
+
+Your setup should look like:
+
+AI Brain
+  ├─ Intent Detector
+  ├─ Task Planner
+  └─ Automation Router
+        ├─ system_actions.py
+        ├─ web_actions.py
+        ├─ media_actions.py
+        ├─ vision_actions.py
+        └─ fallback_pyautogui.py

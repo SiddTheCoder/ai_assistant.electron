@@ -4,6 +4,7 @@ import React, { useEffect } from 'react'
 import axios from "axios"
 import type { IAiResponsePayload } from 'types'
 import { useSparkTTS } from '@/context/sparkTTSContext'
+import ServerStatusShower from '../ServerStatusShower'
 
 
 export default function CenterPanel() {
@@ -12,14 +13,6 @@ export default function CenterPanel() {
    const [status, setStatus] = React.useState<string>("Not started");
   
   const getAudio = async(text:string | undefined) => {
-    // console.log("Socket", socket, isConnected)
-    // if (!socket || !isConnected) return
-    // console.log("emmiting the message now")
-    // emit("send-user-text-query", "Hello Spark Whats up?")
-    // console.log("emmited the message")
-    // on("query-result", (data) => { 
-    //   console.log("query Result",data)
-    // })
     console.log("htting api now")
    const res = await axios.post(
      `${import.meta.env.VITE_API_BASE_URL}/api/tts`,
@@ -30,9 +23,6 @@ export default function CenterPanel() {
    );
     
     console.log("REs", res)
-
-    // play audio
-     // Convert ArrayBuffer → Blob → URL → Play
    const audioBlob = new Blob([res.data], { type: "audio/mpeg" });
    const audioUrl = URL.createObjectURL(audioBlob);
 
@@ -100,29 +90,15 @@ export default function CenterPanel() {
     }
   }
 
-  useEffect(() => {
-    emit("test-ws");
-
-    on("server-status", (data) => {
-      console.log("Server status received", data)
-      setStatus(data.status)
-    })
-
-    
-    return () => {
-      off("server-status");
-    }
-    
-  }, [socket, isConnected, on, emit, off])
   
   return (
     <div>
-      <Button onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}>Click</Button>
+      <Button onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}>get Audio Http</Button>
+      <Button onClick={() => play()}>play ws sound</Button>
       <div className="mt-4 p-2 bg-gray-900 rounded">
         <p className="text-sm">Status: {status}</p>
+        <ServerStatusShower />
       </div>
     </div>
   );
 }
-
-//  onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}

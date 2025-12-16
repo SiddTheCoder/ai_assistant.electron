@@ -8,7 +8,7 @@ import { SocketProvider } from "./context/socketContextProvider.tsx";
 import { SparkTTSProvider } from "./context/sparkTTSContext.tsx";
 
 const user = {
-  _id: "user_1",
+  _id: "guest",
 };
 
 createRoot(document.getElementById("root")!).render(

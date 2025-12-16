@@ -25,7 +25,7 @@ export const SparkTTSProvider = ({
 
   // AUDIO STATE
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const audioQueue = useRef<Array<{ text: string; voice: string }>>([]);
+  const audioQueue = useRef<Array<{ text: string }>>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const currentStreamBuffers = useRef<ArrayBuffer[]>([]);
   const isStreamingRef = useRef(false);
@@ -130,8 +130,8 @@ export const SparkTTSProvider = ({
   };
 
   // PUBLIC API: Speak text
-  const speak = (text: string, voice = "hi-IN-MadhurNeural") => {
-    audioQueue.current.push({ text, voice });
+  const speak = (text: string) => {
+    audioQueue.current.push({ text });
     setQueueLength(audioQueue.current.length);
 
     if (!isSpeaking) {
