@@ -5,6 +5,7 @@ import AuthLander from "./pages/AuthLander";
 import Register from "./pages/Register";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
+import SignInPage from "./pages/SignInPage";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/auth/lander" element={<AuthLander />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/sign-in" element={<SignInPage />} />
       </Routes>
     </HashRouter>
   );

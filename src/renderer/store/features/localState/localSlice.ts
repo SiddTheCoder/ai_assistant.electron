@@ -7,6 +7,8 @@ interface LocalState {
   isRecording: boolean;
   isSpeaking: boolean;
   lastRecordingTimestamp: number | null;
+  isClientOnline: boolean;
+  isServerOnline: boolean;
 }
 
 const initialState: LocalState = {
@@ -15,6 +17,8 @@ const initialState: LocalState = {
   isRecording: false,
   isSpeaking: false,
   lastRecordingTimestamp: null,
+  isClientOnline: true,
+  isServerOnline: true,
 };
 
 const localSlice = createSlice({
@@ -45,6 +49,28 @@ const localSlice = createSlice({
       state.isRecording = false;
       state.isSpeaking = false;
     },
+    setClientOnline: (state) => {
+      state.isClientOnline = true
+    },
+    setClientOffline: (state) => {
+      state.isClientOnline = false;
+    },
+    setServerOnline: (state) => {
+      state.isServerOnline = true;
+    },
+    setServerOffline: (state) => {
+      state.isServerOnline = false;
+    },
+    resetLocalState: (state) => {
+      state.isMicrophoneListening = true;
+      state.isCameraOn = false;
+      state.isRecording = false;
+      state.isSpeaking = false;
+      state.lastRecordingTimestamp = null;
+      state.isClientOnline = true;
+      state.isServerOnline = true;
+    },
+
   },
 });
 
@@ -54,6 +80,11 @@ export const {
   setIsRecording,
   setIsSpeaking,
   resetRecordingState,
+  setClientOnline,
+  setClientOffline,
+  setServerOnline,
+  setServerOffline,
+  resetLocalState
 } = localSlice.actions;
 
 export default localSlice.reducer;

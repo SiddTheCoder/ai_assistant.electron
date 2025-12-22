@@ -90,6 +90,12 @@ export interface IPythonActionResponse {
   message?: string;
 }
 
+export interface IDeviceUsageStatusManager{
+  cpuUsage: number;
+  ramUsage: number;
+  storageData: { total: number; free: number; usage: number };
+}
+
 
 // Payload Mapper - FIXED: Now includes parameters
 export type IEventPayloadMapping = {
@@ -110,6 +116,10 @@ export type IEventPayloadMapping = {
   saveToken: void;
   getToken: string | null;
   deleteToken: void;
+
+  // Device Usage Status
+  getDeviceUsageStatus: IDeviceUsageStatusManager
+  poolDeviceStatus: void
 
   // Python Automation - This defines what the handler receives
   runPythonAction: IPythonActionResponse;
@@ -136,6 +146,10 @@ declare global {
       saveToken: (ACCOUNT_NAME: string, token: string) => Promise<void>;
       getToken: (ACCOUNT_NAME: string) => Promise<string | null>;
       deleteToken: (ACCOUNT_NAME: string) => Promise<void>;
+
+      // Device Usage Status APIs
+      getDeviceUsageStatus: () => Promise<IDeviceUsageStatusManager>;
+      onDeviceUsageStatusChange: (callback: (payload: IDeviceUsageStatusManager) => void) => () => void;
 
       // Python Automation API
       runPythonAction: (payload: IAiResponsePayload) => Promise<IPythonActionResponse>;

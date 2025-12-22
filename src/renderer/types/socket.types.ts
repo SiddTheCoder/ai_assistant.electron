@@ -32,8 +32,8 @@ export interface UserQueryPayload {
   mimeType: string; // e.g., "audio/webm", "audio/ogg"
   timestamp: number;
   duration?: number; // Duration in milliseconds
-  userId?: string; // Optional user identifier
-  sessionId?: string; // Optional session identifier
+  user_id?: string; // Optional user identifier
+  session_id?: string; // Optional session identifier
 }
 
 export interface TTSPayload{

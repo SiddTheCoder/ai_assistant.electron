@@ -3,13 +3,13 @@ import { ArrowLeft, Mail, Lock, CheckCircle2, Sparkles } from "lucide-react";
 import { RippleButton } from "@/components/ui/ripple-button";
 import { useNavigate } from "react-router-dom";
 import AuthLanderBg from "../../assets/AuthLanderBg.jpg";
-import axiosInstance from "@/utils/axiosConfig";
+import axiosInstance, { type ApiResponse } from "@/utils/axiosConfig";
 import type { AuthResponse } from "@/types/auth.types";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/store/hooks";
 import { verifyOtp } from "@/store/features/auth/authThunks";
 
-function Register() {
+function SignInPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch()
   const [step, setStep] = useState(1);
@@ -39,11 +39,16 @@ function Register() {
     setIsLoading(true);
 
     try {
-      const response = await axiosInstance.post("/auth/register", { email });
-      console.log("Registration response:", response);
-      setStep(2);
+      const response : ApiResponse = await axiosInstance.post("/auth/sign-in", { email });
+      console.log("Signin response:", response);
+      if(response.success){
+        setStep(2);
+      }
+      if(response.data){
+        toast.success(response.data.message || response.message)
+      }
     } catch (error) {
-      console.error("Error registering:", error);
+      console.error("Error Signining:", error);
     } finally {
       setIsLoading(false);
     }
@@ -55,14 +60,12 @@ function Register() {
     }
 
      try {
-       const data : AuthResponse= await axiosInstance.post("/api/v1/auth/verify-otp", {
+       const response : AuthResponse = await axiosInstance.post("/auth/verify-otp", {
          email,
          otp,
        });
-       console.log("OTP verification response:", data);
-       if (data.access_token && data.refresh_token) {
-        await window.electronApi.saveToken("access_token", data.access_token);
-        await window.electronApi.saveToken("refresh_token", data.refresh_token);
+       console.log("OTP verification response:", response);
+       if (response.success) {
         navigate("/");
       }
      } catch (error) {
@@ -126,7 +129,7 @@ function Register() {
               </button>
               <div className="flex items-center gap-2 flex-1">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {step === 1 ? "Register" : "Verify Email"}
+                  {step === 1 ? "SignIn" : "Verify Email"}
                 </h1>
               </div>
             </div>
@@ -338,4 +341,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default SignInPage;

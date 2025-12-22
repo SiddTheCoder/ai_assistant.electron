@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IEventPayloadMapping, IFrameWindowAction, IActionDetails, IAiResponsePayload } from "../../types"
+import { IEventPayloadMapping, IFrameWindowAction, IActionDetails, IAiResponsePayload, IDeviceUsageStatusManager } from "../../types"
 
 (() => {
   console.log("Preload Loaded");
@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld("electronApi", {
   saveToken: (ACCOUNT_NAME: string, token: string) => ipcInvoke("saveToken", { ACCOUNT_NAME, token }),
   getToken: (ACCOUNT_NAME: string) => ipcInvoke("getToken", { ACCOUNT_NAME }),
   deleteToken: (ACCOUNT_NAME: string) => ipcInvoke("deleteToken", { ACCOUNT_NAME }),
+
+  //Device Usage Status APIs
+  getDeviceUsageStatus: () => ipcInvoke("getDeviceUsageStatus"),
+  onDeviceUsageStatusChange: (callback : (payload:IDeviceUsageStatusManager ) => void) => ipcOn("getDeviceUsageStatus", callback),
 
   //python Automation API
    runPythonAction: (payload: IAiResponsePayload) => ipcInvoke("runPythonAction", payload),

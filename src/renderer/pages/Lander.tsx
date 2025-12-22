@@ -13,6 +13,8 @@ import {
   setSelectedInputDeviceId,
   setSelectedOutputDeviceId,
 } from "@/store/features/device/deviceSlice";
+import { tokenRefreshManager } from "@/lib/auth/tokenRefreshManager";
+import { getCurrentUser } from "@/store/features/auth/authThunks";
 
 export default function Lander() {
   const dispatch = useAppDispatch();
@@ -29,7 +31,7 @@ export default function Lander() {
     const initialize = async () => {
       try {
         // STEP 1: Check authentication FIRST
-        const token = await window.electronApi.getToken("access_token");
+        const token = await tokenRefreshManager.getValidAccessToken()
 
         if (!token) {
           console.log("❌ No access token found, navigating to auth.");
@@ -37,6 +39,9 @@ export default function Lander() {
           navigate("/auth/lander");
           return;
         }
+
+        //get current user and add to state
+        dispatch(getCurrentUser())
         console.log("✅ Access token found, user is authenticated.");
 
         // STEP 2: If devices already fetched, go directly to home

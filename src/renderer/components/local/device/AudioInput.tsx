@@ -319,6 +319,7 @@ export function AudioInput() {
         mimeType: audioBlob.type,
         timestamp: Date.now(),
         duration: audioChunksRef.current.length * 100,
+        user_id: "guest",
       });
     } catch (error) {
       console.error("❌ Error sending audio:", error);

@@ -22,7 +22,6 @@ export default function Header() {
     });
   }, []);
 
-  console.log("Frame State main", isMainWindowMaximized);
 
   return (
     <div className="w-full min-h-8 bg-white/5 webkit-drag-drag flex justify-between items-center text-white">

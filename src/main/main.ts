@@ -65,7 +65,7 @@ function startPythonService() {
   });
 }
 
-app.on("ready", () => {
+app.on("ready", async () => {
   console.log("App Ready - Starting Python Service");
   startPythonService();
   const preloadPath = getPreloadPath()
@@ -154,7 +154,20 @@ app.on("ready", () => {
     return mainWindow.isMinimized() ? "MINIMIZE" : "MAXIMIZE";
   });
 
- 
+  //device usage status handler
+  ipcMainHandle("getDeviceUsageStatus", async () => {
+    const { getCpuUsage, getRamUsage, getStorageData } = await import("./utils/deviceStatusManager.js");
+    let cpuUsage = await getCpuUsage();
+    let ramUsage = getRamUsage();
+    let storageData = getStorageData();
+    return { cpuUsage, ramUsage, storageData };
+  });
+
+  //device usage status handler - continuous polling
+  const { poolDeviceStatus } = await import("./utils/deviceStatusManager.js");
+  poolDeviceStatus(mainWindow);
+
+
    // python action handler
   ipcMainHandle("runPythonAction", async (_event, payload: IAiResponsePayload) => {
     console.log("🔵 IPC: runPythonAction called");

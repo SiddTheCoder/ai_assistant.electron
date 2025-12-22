@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Video, VideoOff } from "lucide-react";
 import type { IMediaDevice } from "types";
 import { setSelectedCameraDeviceId } from "@/store/features/device/deviceSlice";
 import { toggleCameraOn } from "@/store/features/localState/localSlice";
@@ -64,12 +64,12 @@ export function VideoInputComponent() {
         video: deviceId
           ? {
               deviceId: { exact: deviceId },
-              width: { ideal: 640 },
-              height: { ideal: 480 },
+              // width: { ideal: 640 },
+              // height: { ideal: 480 },
             }
           : {
-              width: { ideal: 640 },
-              height: { ideal: 480 },
+              // width: { ideal: 640 },
+              // height: { ideal: 480 },
             },
         audio: false,
       };
@@ -190,21 +190,6 @@ export function VideoInputComponent() {
             LIVE
           </div>
         )}
-      </div>
-
-      {/* Control Button */}
-      <div className="p-2 bg-gray-800 border-t border-gray-700">
-        <Button
-          onClick={handleToggleCamera}
-          size="sm"
-          className={`w-full ${
-            isCameraOn
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {isCameraOn ? "Stop Camera" : "Start Camera"}
-        </Button>
       </div>
     </div>
   );

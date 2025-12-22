@@ -31,6 +31,46 @@ export const dummyServerStatus: ServerStatus[] = [
     timestamp: "2025-12-14T14:15:12.889342+00:00",
   },
   {
+    flag: "INFO",
+    status: "Analyzing your data",
+    timestamp: "2025-12-14T14:13:02.241901+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "TTS Request Received",
+    timestamp: "2025-12-14T14:15:11.441209+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "Loaded user preferences as gender=female, language=hi",
+    timestamp: "2025-12-14T14:15:11.672113+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "TTS generation completed successfully",
+    timestamp: "2025-12-14T14:15:12.889342+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "Analyzing your data",
+    timestamp: "2025-12-14T14:13:02.241901+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "TTS Request Received",
+    timestamp: "2025-12-14T14:15:11.441209+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "Loaded user preferences as gender=female, language=hi",
+    timestamp: "2025-12-14T14:15:11.672113+00:00",
+  },
+  {
+    flag: "INFO",
+    status: "TTS generation completed successfully",
+    timestamp: "2025-12-14T14:15:12.889342+00:00",
+  },
+  {
     flag: "WARN",
     status: "High response latency detected",
     timestamp: "2025-12-14T14:18:45.932118+00:00",
@@ -49,8 +89,7 @@ const flagStyles = {
 };
 
 function ServerStatusShower() {
-  const [statusArr, setStatusArr] =
-    React.useState<ServerStatus[]>(dummyServerStatus);
+  const [statusArr, setStatusArr] = React.useState<ServerStatus[]>([]);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
   const { isConnected, socket, on } = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
