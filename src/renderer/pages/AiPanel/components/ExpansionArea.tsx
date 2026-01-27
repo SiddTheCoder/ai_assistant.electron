@@ -5,14 +5,21 @@ interface ExpansionAreaProps {
   isVisible: boolean;
   children: ReactNode;
   onClose: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 const ExpansionAreaComponent = forwardRef<HTMLDivElement, ExpansionAreaProps>(
-  ({ isVisible, children, onClose }, ref) => {
+  ({ isVisible, children, onClose, onMouseEnter, onMouseLeave }, ref) => {
     if (!isVisible) return null;
 
     return (
-      <div ref={ref} className="flex justify-center w-full">
+      <div 
+        ref={ref} 
+        className="flex justify-center w-full"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         <div
           className={`
             mt-3 w-[340px] max-h-[400px] overflow-y-auto

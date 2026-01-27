@@ -272,8 +272,8 @@ export default function AiPanel() {
     transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] select-none overflow-hidden
     ${
       isHovered
-        ? "w-[340px] bg-[rgba(10,10,15,0.95)] shadow-[0_25px_70px_rgba(0,0,0,0.7)]"
-        : "w-[200px] bg-[rgba(18,18,23,0.85)] shadow-[0_8px_32px_rgba(0,0,0,0.3)]"
+        ? "w-[340px] bg-[rgba(10,10,15,0.95)] "
+        : "w-[200px] bg-[rgba(18,18,23,0.85)] shadow-[0_8px_12px_rgba(0,0,0,0.2)]"
     }
   `,
     [isHovered],
@@ -332,19 +332,28 @@ export default function AiPanel() {
         onDoubleClick={handleDoubleClick}
         style={{ WebkitAppRegion: isDragMode ? "drag" : "no-drag" } as any}
       >
-        {/* Header */}
-        <div className="relative z-10">
+        {/* Header - Draggable only when expanded/hovered */}
+        <div
+          className="relative z-10"
+          style={
+            {
+              WebkitAppRegion:
+                isHovered || expansionVisible ? "drag" : "no-drag",
+              appRegion: isHovered || expansionVisible ? "drag" : "no-drag",
+            } as any
+          }
+        >
           <PanelHeader audioLevel={audioLevel} />
         </div>
 
         {/* Controls Area (No Drag) */}
-        <motion.div 
+        <motion.div
           className="no-drag-area overflow-hidden"
           initial={{ height: 0, opacity: 0 }}
-          animate={{ 
+          animate={{
             height: isHovered ? "auto" : 0,
             opacity: isHovered ? 1 : 0,
-            y: isHovered ? 0 : -10
+            y: isHovered ? 0 : -10,
           }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >

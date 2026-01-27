@@ -57,10 +57,24 @@ export class SecondaryWindow {
       );
     }
 
-    // 🔒 Lock to top edge
+    // 🔒 Limit dragging to upper area (no bottom) of CURRENT display
     this.window.on("will-move", (e, newBounds) => {
-      // Allow X movement, but force Y to 0
-      newBounds.y = 0;
+      // Find the display the window is engaging with
+      const nearestDisplay = screen.getDisplayMatching(newBounds);
+      const workArea = nearestDisplay.workArea;
+
+      const minY = workArea.y;
+      const maxY = workArea.y + Math.floor(workArea.height / 2);
+      
+      // Prevent dragging below the middle of the screen
+      if (newBounds.y > maxY) {
+        newBounds.y = maxY;
+      }
+      
+      // Prevent dragging off-screen top (respect display y)
+      if (newBounds.y < minY) {
+        newBounds.y = minY;
+      }
     });
 
     this.window.on("closed", () => {
@@ -85,16 +99,16 @@ export class SecondaryWindow {
     if (!this.window) return;
 
     const currentBounds = this.window.getBounds();
-    const display = screen.getPrimaryDisplay().workAreaSize;
-
-    // Calculate centered X position for the new width
-    const newX = Math.round((display.width - width) / 2);
+    
+    // Calculate new X to expand quickly from center
+    // newX = currentX - (changeInWidth / 2)
+    const newX = Math.round(currentBounds.x - (width - currentBounds.width) / 2);
 
     // Use setBounds with animate flag for smooth transitions
     this.window.setBounds(
       {
         x: newX,
-        y: 0, // Keep at top
+        y: currentBounds.y, // Keep current Y position
         width: Math.round(width),
         height: Math.round(height),
       },
@@ -119,7 +133,7 @@ export class SecondaryWindow {
     const currentBounds = this.window.getBounds();
     const newBounds = {
       x: bounds.x ?? currentBounds.x,
-      y: 0, // Always force Y to 0 (top edge)
+      y: bounds.y ?? currentBounds.y, // Respect current Y or passed Y
       width: bounds.width ?? currentBounds.width,
       height: bounds.height ?? currentBounds.height,
     };
