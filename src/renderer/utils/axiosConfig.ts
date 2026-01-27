@@ -119,22 +119,22 @@ function handleErrorResponse(error: AxiosError): ApiResponse {
   };
 
   // Show toast notification based on error type
-  if (!response) {
-    // Network error
-    toast.error("Network Error: Please check your connection.");
-    standardizedError.error!.message = "Network error. Please check your connection.";
-  } else if (response.status === 401) {
-    toast.error(standardizedError.error?.message || "Authentication failed. Please login again.");
-  } else if (response.status === 403) {
-    toast.error(standardizedError.error?.message || "Access denied. You don't have permission.");
-  } else if (response.status === 404) {
-    toast.error(standardizedError.error?.message);
-  } else if (response.status >= 500) {
-    toast.error(standardizedError.error?.message || "Server error. Please try again later.");
-  } else {
-    // Show custom error message from server
-    toast.error(standardizedError.error!.message);
-  }
+  // if (!response) {
+  //   // Network error
+  //   toast.error("Network Error: Please check your connection.");
+  //   standardizedError.error!.message = "Network error. Please check your connection.";
+  // } else if (response.status === 401) {
+  //   toast.error(standardizedError.error?.message || "Authentication failed. Please login again.");
+  // } else if (response.status === 403) {
+  //   toast.error(standardizedError.error?.message || "Access denied. You don't have permission.");
+  // } else if (response.status === 404) {
+  //   toast.error(standardizedError.error?.message);
+  // } else if (response.status >= 500) {
+  //   toast.error(standardizedError.error?.message || "Server error. Please try again later.");
+  // } else {
+  //   // Show custom error message from server
+  //   toast.error(standardizedError.error!.message);
+  // }
 
   return standardizedError;
 }

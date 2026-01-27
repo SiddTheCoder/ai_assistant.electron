@@ -6,7 +6,7 @@ body,
   margin: 0;
   padding: 0;
   background: transparent !important;
-  overflow: hidden; /* 🔥 removes scrollbar */
+  overflow: hidden;
 }
 
 /* Electron drag regions */
@@ -16,4 +16,54 @@ body,
 
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* Custom scrollbar - hidden but functional */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Smooth scrolling for better UX */
+.custom-scrollbar {
+  scroll-behavior: smooth;
+}
+
+/* macOS-like smooth animations */
+@keyframes slide-in-from-top-2 {
+  from {
+    transform: translateY(-8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top-2;
+}
+
+.fade-in {
+  animation-name: fade-in;
 }

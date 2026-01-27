@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { FC, ReactNode } from "react";
 
 // ============================================
 // Controller Plugin System Types
@@ -82,7 +82,7 @@ export interface SwipeContainerProps {
 }
 
 export interface ControllerDotsProps {
-  total: number;
+  controllers: ControllerPlugin[];
   activeIndex: number;
   onSelect: (index: number) => void;
 }
@@ -97,13 +97,7 @@ export interface ExpansionAreaProps {
 // Enums & Utility Types
 // ============================================
 
-export type SwipeDirection = 'left' | 'right';
-
-export interface TouchState {
-  startX: number;
-  endX: number;
-  isDragging: boolean;
-}
+export type SwipeDirection = "left" | "right";
 
 // ============================================
 // App Launcher Types

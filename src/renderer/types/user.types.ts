@@ -38,4 +38,23 @@ export interface IUser{
 
   // --- Misc ---
   custom_attributes: Record<string, any>;
+  theme_preferences?: ThemePreferences;
+}
+
+export interface ThemePreferences {
+  // Main background gradients/colors
+  backgroundColor: string;
+  borderColor: string;
+  
+  // Interactive element colors (hover, active)
+  accentColor: string;
+  accentColorHover: string;
+  
+  // Text colors
+  textColorPrimary: string;
+  textColorSecondary: string;
+  
+  // Specific component overrides if needed
+  panelBackgroundCollapsed: string;
+  panelBackgroundExpanded: string;
 }

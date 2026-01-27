@@ -12,23 +12,18 @@ export class SecondaryWindow {
     this.window = new BrowserWindow({
       width: 220, // 🔥 collapsed size (dynamic resize will expand)
       height: 70,
-
       x: Math.round((display.width - 220) / 2), // 🎯 centered horizontally
       y: 0, // 📌 attached to top edge (snackbar style)
-
       frame: false, // ❌ remove OS chrome
       transparent: true, // 🌫 glass effect
       resizable: false,
       minimizable: false,
       maximizable: false,
       closable: false,
-
       alwaysOnTop: true, // 🧲 stay above apps
       skipTaskbar: true,
       hasShadow: true,
-
       show: false,
-
       webPreferences: {
         preload: getPreloadPath(),
         partition: "persist:spark",
@@ -82,8 +77,29 @@ export class SecondaryWindow {
     return this.window;
   }
 
+  /**
+   * Smoothly resize the window with animation
+   * Uses setBounds with animate flag for buttery smooth transitions
+   */
   public setSize(width: number, height: number) {
-    this.window?.setSize(width, height);
+    if (!this.window) return;
+
+    const currentBounds = this.window.getBounds();
+    const display = screen.getPrimaryDisplay().workAreaSize;
+
+    // Calculate centered X position for the new width
+    const newX = Math.round((display.width - width) / 2);
+
+    // Use setBounds with animate flag for smooth transitions
+    this.window.setBounds(
+      {
+        x: newX,
+        y: 0, // Keep at top
+        width: Math.round(width),
+        height: Math.round(height),
+      },
+      false, // ⚡ DISABLE ANIMATION - Let CSS handle it
+    );
   }
 
   public getBounds(): Electron.Rectangle {
@@ -91,7 +107,23 @@ export class SecondaryWindow {
     return this.window.getBounds();
   }
 
-  public setBounds(bounds: Partial<Electron.Rectangle>) {
-    this.window?.setBounds(bounds);
+  /**
+   * Set bounds with optional animation
+   */
+  public setBounds(
+    bounds: Partial<Electron.Rectangle>,
+    animate: boolean = false,
+  ) {
+    if (!this.window) return;
+
+    const currentBounds = this.window.getBounds();
+    const newBounds = {
+      x: bounds.x ?? currentBounds.x,
+      y: 0, // Always force Y to 0 (top edge)
+      width: bounds.width ?? currentBounds.width,
+      height: bounds.height ?? currentBounds.height,
+    };
+
+    this.window.setBounds(newBounds, animate);
   }
 }
