@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import {  motion } from "motion/react";
+import { motion } from "motion/react";
 import { getControllers } from "./controllers";
 import { PanelHeader } from "./components/PanelHeader";
 import { SwipeContainer } from "./components/SwipeContainer";
@@ -9,9 +9,10 @@ import { ThemeProvider } from "./context/ThemeContext";
 import type { SwipeDirection, ControllerPlugin } from "./types";
 
 // Panel size constants
-const COLLAPSED_SIZE = { width: 180, height: 60 };
+const COLLAPSED_SIZE = { width: 200, height: 60 };
 const EXPANDED_SIZE = { width: 360, height: 180 };
 const EXPANSION_HEIGHT = 450;
+const EXPANSION_WIDTH = 740;
 
 // Memoized resize function (direct, no internal debounce)
 const resizeWindow = (() => {
@@ -71,7 +72,7 @@ export default function AiPanel() {
     if (expansionVisible) {
       // EXPAND: Resize IMMEDIATELY so window is big enough for content to grow into
       resizeWindow(
-        EXPANDED_SIZE.width,
+        Math.max(EXPANDED_SIZE.width, EXPANSION_WIDTH),
         EXPANDED_SIZE.height + EXPANSION_HEIGHT,
       );
     } else if (isHovered) {
@@ -88,7 +89,7 @@ export default function AiPanel() {
     }
   }, [isHovered, expansionVisible]);
 
-  // Check if mouse is over panel or expansion - with tolerance for smooth transitions
+  // Check if mouse is over panel - with tolerance for smooth transitions
   const checkMousePosition = useCallback(
     (clientX: number, clientY: number): boolean => {
       // Check panel with small tolerance
@@ -103,22 +104,9 @@ export default function AiPanel() {
         if (isOverPanel) return true;
       }
 
-      // Check expansion if visible with gap tolerance
-      if (expansionVisible && expansionRef.current) {
-        const expansionRect = expansionRef.current.getBoundingClientRect();
-        const gapTolerance = 10; // Allow gap between panel and expansion
-
-        return (
-          clientX >= expansionRect.left - 5 &&
-          clientX <= expansionRect.right + 5 &&
-          clientY >= expansionRect.top - gapTolerance &&
-          clientY <= expansionRect.bottom + 5
-        );
-      }
-
       return false;
     },
-    [expansionVisible],
+    [],
   );
 
   // Optimized hover handlers
@@ -229,6 +217,48 @@ export default function AiPanel() {
     };
   }, []);
 
+  // Close expansion when clicking outside
+  useEffect(() => {
+    if (!expansionVisible) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const { clientX, clientY } = event;
+
+      // Check if click is inside panel bounds
+      const panelRect = panelRef.current?.getBoundingClientRect();
+      if (
+        panelRect &&
+        clientX >= panelRect.left &&
+        clientX <= panelRect.right &&
+        clientY >= panelRect.top &&
+        clientY <= panelRect.bottom
+      ) {
+        return;
+      }
+
+      // Check if click is inside expansion bounds
+      const expansionRect = expansionRef.current?.getBoundingClientRect();
+      if (
+        expansionRect &&
+        clientX >= expansionRect.left &&
+        clientX <= expansionRect.right &&
+        clientY >= expansionRect.top &&
+        clientY <= expansionRect.bottom
+      ) {
+        return;
+      }
+
+      // Click is outside both, close expansion
+      setExpansionVisible(false);
+      setExpansionData(null);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [expansionVisible]);
+
   // Memoized swipe handler
   const handleSwipe = useCallback(
     (direction: SwipeDirection) => {
@@ -272,13 +302,11 @@ export default function AiPanel() {
     ${
       isHovered
         ? "w-[340px] bg-[rgba(10,10,15,0.95)] "
-        : "w-[200px] bg-[rgba(18,18,23,0.85)] shadow-[0_8px_12px_rgba(0,0,0,0.2)]"
+        : "w-[200px] bg-[rgba(18,18,23,0.85)] rounded-2xl"
     }
   `,
     [isHovered],
   );
-
-
 
   // Memoized controller items to prevent re-render
   const controllerItems = useMemo(
