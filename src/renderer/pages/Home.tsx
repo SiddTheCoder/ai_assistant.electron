@@ -3,6 +3,7 @@ import Header from "@/components/local/Header";
 import CenterPanel from "@/components/local/home/CenterPanel";
 import LeftPanel from "@/components/local/home/LeftPanel";
 import RightPanel from "@/components/local/home/RightPanel";
+import TerminalShower from "@/components/local/terminals/TerminalShower";
 import { useAiResponseHandler } from "@/hooks/useAiResponseHandler";
 import { useAppSelector } from "@/store/hooks";
 
@@ -27,7 +28,7 @@ function Home() {
           <LeftPanel />
         </div>
         <div className="h-full flex-1 border-r border-l border-white/5">
-          <CenterPanel />
+          <TerminalShower />
         </div>
         <div className="h-full lg:w-[300px] w-60">
           <RightPanel />

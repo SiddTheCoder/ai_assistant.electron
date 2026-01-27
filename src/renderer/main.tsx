@@ -7,7 +7,7 @@ import { store } from "./store/store.ts";
 import { SocketProvider } from "./context/socketContextProvider.tsx";
 import { SparkTTSProvider } from "./context/sparkTTSContext.tsx";
 
-const user = {
+const user  = {
   _id: "guest",
 };
 

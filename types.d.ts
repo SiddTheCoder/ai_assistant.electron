@@ -123,6 +123,11 @@ export type IEventPayloadMapping = {
 
   // Python Automation - This defines what the handler receives
   runPythonAction: IPythonActionResponse;
+
+  // Secondary Window
+  openSecondaryWindow: void;
+  resizeSecondaryWindow: void;
+  closeAiPanelExpansion: void;
 };
 
 
@@ -153,6 +158,11 @@ declare global {
 
       // Python Automation API
       runPythonAction: (payload: IAiResponsePayload) => Promise<IPythonActionResponse>;
+
+      // Secondary Window API
+      openSecondaryWindow: () => Promise<void>;
+      resizeSecondaryWindow: (width: number, height: number) => Promise<void>;
+      onCloseAiPanelExpansion: (callback: () => void) => () => void;
     };
   }
 }

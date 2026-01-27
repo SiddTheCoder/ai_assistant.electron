@@ -126,7 +126,7 @@ export default function Lander() {
       } catch (error) {
         console.error("❌ Initialization error:", error);
         hasNavigated.current = true;
-        navigate("/auth/lander");
+        navigate("/test-ai-window");
       }
     };
 

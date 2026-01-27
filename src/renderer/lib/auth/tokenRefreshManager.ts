@@ -14,30 +14,22 @@ class TokenRefreshManager {
   private failedQueue: TokenRefreshQueueItem[] = [];
   private refreshPromise: Promise<string> | null = null;
 
-  /**
-   * ✅ Centralized token refresh logic
-   * Used by both Axios interceptor and Socket.IO connection
-   */
   async getValidAccessToken(): Promise<string> {
     try {
-      // 1. Try to get existing token
       const currentToken = await window.electronApi.getToken("access_token");
       
       if (!currentToken) {
         throw new Error("No access token found");
       }
 
-      // 2. Check if token is expired or about to expire
       const isExpired = this.isTokenExpired(currentToken);
       const isExpiringSoon = this.isTokenExpiringSoon(currentToken);
 
-      // 3. If valid and not expiring soon, return it
       if (!isExpired && !isExpiringSoon) {
         console.log("✅ Token is valid, using existing token");
         return currentToken;
       }
 
-      // 4. If expired or expiring soon, refresh it
       console.log("⚠️ Token expired or expiring soon, refreshing...");
       return await this.refreshAccessToken();
 
@@ -47,9 +39,6 @@ class TokenRefreshManager {
     }
   }
 
-  /**
-   * ✅ Check if JWT token is expired
-   */
   private isTokenExpired(token: string): boolean {
     try {
       const payload = this.decodeJWT(token);
@@ -58,13 +47,10 @@ class TokenRefreshManager {
       const now = Math.floor(Date.now() / 1000);
       return payload.exp < now;
     } catch {
-      return true; // If can't decode, consider expired
+      return true;
     }
   }
 
-  /**
-   * ✅ Check if token expires within next 5 minutes
-   */
   private isTokenExpiringSoon(token: string): boolean {
     try {
       const payload = this.decodeJWT(token);
@@ -79,9 +65,6 @@ class TokenRefreshManager {
     }
   }
 
-  /**
-   * ✅ Decode JWT without verification (client-side only)
-   */
   private decodeJWT(token: string): any {
     try {
       const base64Url = token.split('.')[1];
@@ -99,12 +82,7 @@ class TokenRefreshManager {
     }
   }
 
-  /**
-   * ✅ Refresh access token using refresh token
-   * Ensures only one refresh happens at a time
-   */
   async refreshAccessToken(): Promise<string> {
-    // If already refreshing, wait for that operation
     if (this.isRefreshing && this.refreshPromise) {
       console.log("⏳ Token refresh already in progress, waiting...");
       return this.refreshPromise;
@@ -112,32 +90,47 @@ class TokenRefreshManager {
 
     this.isRefreshing = true;
 
-    // Create the refresh promise
     this.refreshPromise = (async () => {
       try {
         const refreshToken = await window.electronApi.getToken("refresh_token");
         
         if (!refreshToken) {
-            throw new Error("No refresh token found");
+          throw new Error("No refresh token found");
         }
 
         console.log("🔄 Refreshing access token...");
 
-        const response: ApiResponse = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
-            { refresh_token: refreshToken }
+        // ✅ FIX: Use fetch instead of axios to avoid interceptor loops
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          }
         );
 
-        console.log("response after refeshint the token :", response)
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to refresh token");
+        }
 
-        // ✅ FIX: Extract from root level, not response.data
-        const access_token = response.access_token;
-        const newRefreshToken = response.refresh_token
+        const data = await response.json();
+        console.log("Response after refreshing token:", data);
 
-        // Better: Check if tokens are the security message
-        if (!access_token || !newRefreshToken || 
-            typeof newRefreshToken === 'string' && newRefreshToken.includes('security reasons')) {
-            throw new Error("Failed to extract valid tokens from response");
+        // ✅ FIX: Extract tokens from root level (your API structure)
+        const access_token = data.access_token;
+        const newRefreshToken = data.refresh_token;
+
+        // ✅ FIX: Better validation
+        if (!access_token || typeof access_token !== 'string' || access_token.length < 10) {
+          throw new Error("Invalid access token received");
+        }
+
+        if (!newRefreshToken || typeof newRefreshToken !== 'string' || newRefreshToken.length < 10) {
+          throw new Error("Invalid refresh token received");
         }
 
         // Save new tokens
@@ -151,19 +144,33 @@ class TokenRefreshManager {
 
         return access_token;
 
-    } catch (error) {
+      } catch (error: any) {
         console.error("❌ Token refresh failed:", error);
         
         // Process queued requests with error
         this.processQueue(error as Error, null);
 
-        // Clear tokens
-        await window.electronApi.deleteToken("access_token")
-        await window.electronApi.deleteToken("refresh_token")
+        // ✅ FIX: Only delete tokens if it's an auth error (401/403)
+        // Don't delete on network errors or server errors
+        const shouldClearTokens = 
+          error.message?.includes("Invalid") ||
+          error.message?.includes("expired") ||
+          error.message?.includes("No refresh token") ||
+          error.status === 401 ||
+          error.status === 403;
 
-        // Redirect to login
-        toast.error("Session expired. Please login again.");
-        window.location.href = "/auth/lander";
+        if (shouldClearTokens) {
+          console.log("🗑️ Clearing invalid tokens");
+          await window.electronApi.deleteToken("access_token");
+          await window.electronApi.deleteToken("refresh_token");
+          
+          // Redirect to login
+          toast.error("Session expired. Please login again.");
+          // window.location.href = "/auth/lander";
+        } else {
+          // Network error or server error - keep tokens, just show error
+          toast.error("Failed to refresh session. Please try again.");
+        }
 
         throw error;
 
@@ -176,18 +183,12 @@ class TokenRefreshManager {
     return this.refreshPromise;
   }
 
-  /**
-   * ✅ Add request to queue while token is refreshing
-   */
   addToQueue(): Promise<string> {
     return new Promise((resolve, reject) => {
       this.failedQueue.push({ resolve, reject });
     });
   }
 
-  /**
-   * ✅ Process all queued requests after refresh completes
-   */
   private processQueue(error: Error | null, token: string | null) {
     this.failedQueue.forEach((item) => {
       if (error) {
@@ -200,13 +201,9 @@ class TokenRefreshManager {
     this.failedQueue = [];
   }
 
-  /**
-   * ✅ Check if currently refreshing
-   */
   get isCurrentlyRefreshing(): boolean {
     return this.isRefreshing;
   }
 }
 
-// Export singleton instance
 export const tokenRefreshManager = new TokenRefreshManager();

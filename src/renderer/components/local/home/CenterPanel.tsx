@@ -4,7 +4,10 @@ import React, { useEffect } from 'react'
 import axios from "axios"
 import type { IAiResponsePayload } from 'types'
 import { useSparkTTS } from '@/context/sparkTTSContext'
-import ServerStatusShower from '../ServerStatusShower'
+import ServerStatusShower from '../terminals/ServerStatusTerminal'
+
+import { tokenRefreshManager } from "@/lib/auth/tokenRefreshManager";
+
 
 
 export default function CenterPanel() {
@@ -63,6 +66,9 @@ export default function CenterPanel() {
   }
   }
   
+
+  
+
   const play = () => {
     speak(
       "कोई बात नहीं है, सर। सब ठीक हो जाएगा। क्या हुआ जो इतनी माफी मांग रहे हैं?"
@@ -90,11 +96,32 @@ export default function CenterPanel() {
     }
   }
 
+  // ✅ FIX: Prevent page refresh
+const handleRefreshToken = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault(); // Prevent any default behavior
+  try {
+    console.log("hitting api now")
+    const res = await tokenRefreshManager.refreshAccessToken();
+    console.log(
+      "after hitting res"
+    )
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+  }
+}
+
   
   return (
     <div>
       <Button onClick={() => getAudio("हो गया सर, देख सकते हैं। कुछ और चाहिए?")}>get Audio Http</Button>
       <Button onClick={() => play()}>play ws sound</Button>
+      <Button 
+        type="button"
+        className="webkit-drag-nodrag" 
+        onClick={handleRefreshToken}
+        >
+        Refresh Token
+      </Button>
       <div className="mt-4 p-2 bg-gray-900 rounded">
         <p className="text-sm">Status: {status}</p>
         <ServerStatusShower />

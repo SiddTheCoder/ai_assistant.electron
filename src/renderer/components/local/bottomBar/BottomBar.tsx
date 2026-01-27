@@ -1,31 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
-  Settings,
-  User,
-  Palette,
-  Bell,
-  Shield,
-  Languages,
-  Globe,
-  Moon,
-  LogOut,
-  HelpCircle,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -86,7 +63,7 @@ export default function BottomBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="w-full h-10 bg-white/5 flex items-center justify-between text-xs text-neutral-400 webkit-drag-nodrag border-t border-white/10">
+      <div className="w-full h-9 bg-white/5 flex items-center justify-between text-xs text-neutral-400 webkit-drag-nodrag border-t border-white/10 z-999">
         {/* Left - Settings & Profile */}
         <div className="flex items-center gap-1 px-2">
           <Setting />

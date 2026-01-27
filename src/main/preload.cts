@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld("electronApi", {
   //python Automation API
    runPythonAction: (payload: IAiResponsePayload) => ipcInvoke("runPythonAction", payload),
 
+  //Secondary Window API
+  openSecondaryWindow: () => ipcInvoke("openSecondaryWindow"),
+  resizeSecondaryWindow: (width: number, height: number) => ipcInvoke("resizeSecondaryWindow", { width, height }),
+  onCloseAiPanelExpansion: (callback: () => void) => ipcOn("closeAiPanelExpansion", callback),
+
 } satisfies Window["electronApi"]);
 
 

@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
 import SignInPage from "./pages/SignInPage";
+import Ai from "./pages/AiPanel/AiPanel";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Lander />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/test-ai-window" element={<Ai />} />
         <Route path="/auth/lander" element={<AuthLander />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/sign-in" element={<SignInPage />} />

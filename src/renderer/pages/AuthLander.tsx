@@ -3,12 +3,12 @@ import SparkIcon from "../../assets/icon.png";
 import MinimalHeader from "@/components/local/MinimalHeader";
 import { useNavigate } from "react-router-dom";
 import { RippleButton } from "@/components/ui/ripple-button";
-import { Button } from "@/components/ui/button";
 
 import Icon from "../../assets/icon.png"
 import {toast} from "sonner"
 import { useAppDispatch } from "@/store/hooks";
-import { getCurrentUser } from "@/store/features/auth/authThunks";
+
+
 
 function Title() {
   return (
@@ -52,22 +52,24 @@ function EntranceMaker() {
 
 
 export default function AuthLander() {
-
   const dispatch = useAppDispatch()
+  
   const addToken = async() => {
     console.log("adding token")
     await window.electronApi.saveToken("access_token","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTJmZGNmOTcyYzg3ZTUxMjMyNTZlYzAiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzY2MzA1MTk3LCJleHAiOjE3NjYzMDY5OTcsImlzcyI6InNwYXJrLWFwaSJ9.gGQ5icR7IqZdPolY7EEV5ynbK8MplSSbocGUtNJxp8g")
     await window.electronApi.saveToken("refresh_token", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTJmZGNmOTcyYzg3ZTUxMjMyNTZlYzAiLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTc2NjMwNTE5NywiZXhwIjoxNzY2OTA5OTk3LCJpc3MiOiJzcGFyay1hcGkifQ.qI948w5CdtkBMVrwK_LSKlKIeM_ENsM_5svbJwNE83o")
     const access_token = await window.electronApi.getToken("access_token")
     const refresh_token = await window.electronApi.getToken("refresh_token")
-    console.log("access_toekn ", access_token)
+    console.log("access_token ", access_token)
     console.log("refresh_token ", refresh_token)
   }
 
+
+
   const hey = () => {
-    toast.error("Error occured while getting current user from authThunk", 
+    toast.error("Error occurred while getting current user from authThunk", 
       {description:"Error", icon : Icon}
-  )
+    )
   }
 
   return (
@@ -84,7 +86,6 @@ export default function AuthLander() {
         <Title />
         <DescribeApp />
         <EntranceMaker />
-        <Button className="webkit-drag-nodrag" onClick={() => addToken()}>hey</Button>
         <span className="absolute bottom-5 text-sm text-gray-900">V.1.0.0</span>
       </div>
     </div>

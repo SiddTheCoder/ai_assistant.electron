@@ -2,7 +2,7 @@ import fs from "fs";
 import os from "os";
 import { BrowserWindow } from "electron";
 import { IDeviceUsageStatusManager } from "../../../types.js";
-import { ipcWebContentSend } from "./ipcUtils.js";
+import { ipcWebContentSend } from "../utils/ipcUtils.js";
 
 const POLLING_INTERVAL = 1000;
 
