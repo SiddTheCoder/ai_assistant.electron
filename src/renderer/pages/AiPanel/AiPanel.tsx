@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSelector } from "react-redux";
-import { AnimatePresence, motion } from "motion/react";
-import type { RootState } from "@/store/store";
+import {  motion } from "motion/react";
 import { getControllers } from "./controllers";
 import { PanelHeader } from "./components/PanelHeader";
 import { SwipeContainer } from "./components/SwipeContainer";
@@ -11,7 +9,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import type { SwipeDirection, ControllerPlugin } from "./types";
 
 // Panel size constants
-const COLLAPSED_SIZE = { width: 220, height: 70 };
+const COLLAPSED_SIZE = { width: 180, height: 60 };
 const EXPANDED_SIZE = { width: 360, height: 180 };
 const EXPANSION_HEIGHT = 450;
 
@@ -37,6 +35,7 @@ const resizeWindow = (() => {
 
 export default function AiPanel() {
   const [isHovered, setIsHovered] = useState(false);
+  // TODO : merge this audio level with real audio input level and also #TODO add the ai audio level
   const [audioLevel, setAudioLevel] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [expansionVisible, setExpansionVisible] = useState(false);
@@ -299,13 +298,6 @@ export default function AiPanel() {
     [controllers, activeController],
   );
 
-  // Double click handler to toggle dragging
-  const handleDoubleClick = useCallback(() => {
-    if (isHovered && !expansionVisible) {
-      setIsDragMode((prev) => !prev);
-    }
-  }, [isHovered, expansionVisible]);
-
   // Turn off drag mode when minimized or expanded
   useEffect(() => {
     if (!isHovered || expansionVisible) {
@@ -329,7 +321,6 @@ export default function AiPanel() {
         className={`${panelClassName} ${isDragMode ? "drag-active cursor-move" : ""}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onDoubleClick={handleDoubleClick}
         style={{ WebkitAppRegion: isDragMode ? "drag" : "no-drag" } as any}
       >
         {/* Header - Draggable only when expanded/hovered */}

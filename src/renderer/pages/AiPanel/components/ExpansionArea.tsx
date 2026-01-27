@@ -14,19 +14,19 @@ const ExpansionAreaComponent = forwardRef<HTMLDivElement, ExpansionAreaProps>(
     if (!isVisible) return null;
 
     return (
-      <div 
-        ref={ref} 
+      <div
+        ref={ref}
         className="flex justify-center w-full"
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         <div
           className={`
-            mt-3 w-[340px] max-h-[400px] overflow-y-auto
+            mt-3 w-[740px] max-h-[400px] overflow-y-auto
             bg-[rgba(30,27,75,0.9)] backdrop-blur-2xl
             rounded-2xl border border-indigo-300/15
             shadow-[0_8px_32px_rgba(99,102,241,0.2)]
-            transition-all duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)]
+            transition-all duration-350 ease-in-out
             animate-in slide-in-from-top-2 fade-in
             custom-scrollbar
           `}

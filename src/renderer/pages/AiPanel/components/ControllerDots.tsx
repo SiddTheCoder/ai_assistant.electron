@@ -18,8 +18,8 @@ export const ControllerDots = memo(
                 className={`
                   flex items-center justify-center transition-all duration-300 rounded-full
                   ${
-                    isActive 
-                      ? "text-[var(--accent-color)] scale-110" 
+                    isActive
+                      ? "text-[var(--accent-color)] scale-110"
                       : "text-[var(--text-secondary)] opacity-40 hover:opacity-70 hover:text-[var(--accent-color)]"
                   }
                   w-6 h-6
