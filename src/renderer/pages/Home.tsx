@@ -10,14 +10,19 @@ import { useAppSelector } from "@/store/hooks";
 function Home() {
   const {user} = useAppSelector((state) => state.auth)
   console.log("user fomr state", user)
-  useAiResponseHandler({
+   useAiResponseHandler({
     autoListen: true,
-    onSuccess(response, payload) {
-      console.log("Action completed successfully!");
+    onPQHSuccess: (payload) => {
+      console.log("PQH completed:", payload);
     },
-    onError(error, payload) {
-      console.error("Action failed:", error);
+    onTaskBatchComplete: (results) => {
+      console.log("Tasks completed:", results);
+      // Update UI, show notifications, etc.
     },
+    onTaskBatchError: (error) => {
+      console.error("Tasks failed:", error);
+      // Show error toast
+    }
   });
 
   return (
@@ -28,7 +33,7 @@ function Home() {
           <LeftPanel />
         </div>
         <div className="h-full flex-1 border-r border-l border-white/5">
-          <TerminalShower />
+          <CenterPanel />
         </div>
         <div className="h-full lg:w-[300px] w-60">
           <RightPanel />

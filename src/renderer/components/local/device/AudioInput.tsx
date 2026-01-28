@@ -319,7 +319,7 @@ export function AudioInput() {
         mimeType: audioBlob.type,
         timestamp: Date.now(),
         duration: audioChunksRef.current.length * 100,
-        user_id: "guest",
+        userId: "guest",
       });
     } catch (error) {
       console.error("❌ Error sending audio:", error);
@@ -391,25 +391,39 @@ export function AudioInput() {
 
   const startListening = async () => {
     try {
-      // Stop existing stream
+      // Stop existing stream first and wait a moment
       if (streamRef.current) {
         streamRef.current
           .getTracks()
           .forEach((track: MediaStreamTrack) => track.stop());
+        streamRef.current = null;
       }
       if (audioContextRef.current) {
-        audioContextRef.current.close();
+        await audioContextRef.current.close();
+        audioContextRef.current = null;
       }
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
+
+      // Small delay to ensure previous streams are fully released
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const deviceId = selectedInputDeviceId || audioInputDevices[0]?.deviceId;
 
-      const constraints: MediaStreamConstraints = {
-        audio: deviceId
+      // Try with preferred device first
+      const getConstraints = (useExact: boolean): MediaStreamConstraints => ({
+        audio: deviceId && useExact
           ? {
               deviceId: { exact: deviceId },
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            }
+          : deviceId && !useExact
+          ? {
+              deviceId: { ideal: deviceId },
               echoCancellation: true,
               noiseSuppression: true,
               autoGainControl: true,
@@ -420,13 +434,51 @@ export function AudioInput() {
               autoGainControl: true,
             },
         video: false,
-      };
+      });
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = stream;
-      setupAudioVisualization(stream);
-    } catch (error) {
+      let stream: MediaStream | null = null;
+
+      // Try with exact deviceId first
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(getConstraints(true));
+      } catch (exactError: any) {
+        console.warn("⚠️ Exact device failed, trying with ideal preference:", exactError.message);
+        
+        // Fallback: try with ideal (flexible) deviceId
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(getConstraints(false));
+        } catch (idealError: any) {
+          console.warn("⚠️ Ideal device failed, trying any available mic:", idealError.message);
+          
+          // Final fallback: try any available microphone
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+            video: false,
+          });
+        }
+      }
+
+      if (stream) {
+        streamRef.current = stream;
+        setupAudioVisualization(stream);
+        console.log("✅ Audio stream started successfully");
+      }
+    } catch (error: any) {
       console.error("❌ Error starting audio:", error);
+      
+      // Provide more helpful error message
+      if (error.name === "NotReadableError") {
+        console.error("💡 Tip: The microphone may be in use by another app. Close other apps using the mic and try again.");
+      } else if (error.name === "NotAllowedError") {
+        console.error("💡 Tip: Microphone permission was denied. Please allow microphone access.");
+      } else if (error.name === "NotFoundError") {
+        console.error("💡 Tip: No microphone found. Please connect a microphone.");
+      }
+      
       if (isMicrophoneListening) {
         dispatch(toggleMicrophoneListening());
       }

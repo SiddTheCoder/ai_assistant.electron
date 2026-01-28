@@ -4,7 +4,7 @@ import { RippleButton } from "@/components/ui/ripple-button";
 import { useNavigate } from "react-router-dom";
 import AuthLanderBg from "../../assets/AuthLanderBg.jpg";
 import axiosInstance from "@/utils/axiosConfig";
-import type { AuthResponse } from "@/types/auth.types";
+import type { AuthResponse } from "@shared/auth.types";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/store/hooks";
 import { verifyOtp } from "@/store/features/auth/authThunks";

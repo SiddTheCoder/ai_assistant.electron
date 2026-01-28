@@ -30,7 +30,8 @@
     /* Tailwind CSS */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/renderer/*"]
+      "@/*": ["./src/renderer/*"],
+      "@shared/*": ["./src/types/*"]
     }
   },
   "include": ["src"],

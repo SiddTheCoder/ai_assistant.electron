@@ -3,8 +3,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
-import type { RegisteredPayload, SocketEvents } from "../types/socket.types";
-import type { IUser } from "../types/user.types";
+import type { RegisteredPayload, SocketEvents } from "@shared/socket.types";
+import type { IUser } from "@shared/user.types";
 import { useAppDispatch } from "../store/hooks";
 import { setServerOffline, setServerOnline } from "@/store/features/localState/localSlice";
 import { tokenRefreshManager } from "@/lib/auth/tokenRefreshManager";
@@ -111,7 +111,7 @@ export const SocketProvider = ({
         connectionAttemptRef.current = 0; // Reset attempt counter
         
         // Register user (backward compatibility)
-        newSocket.emit("register_user", currentUser.id);
+        newSocket.emit("register_user", currentUser._id);
         
         dispatch(setServerOnline());
         setIsConnected(true);
@@ -231,7 +231,7 @@ export const SocketProvider = ({
         dispatch(setServerOffline());
       }
     };
-  }, [currentUser?.id, socketUrl]);
+  }, [currentUser?._id, socketUrl]);
 
   // ========= TYPE-SAFE WRAPPER FUNCTIONS =========
 

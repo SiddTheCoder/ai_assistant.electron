@@ -30,72 +30,25 @@ export interface IMediaStream {
   cameraDeviceiId?: string;
 }
 
-// ----- Python Action Types -----
 
-export type IActionType =
-  | "play_song"
-  | "make_call"
-  | "send_message"
-  | "search"
-  | "open_app"
-  | "navigate"
-  | "control_device"
-  | "create_task"
-  | "empty";
-
-export type IEmotion = "neutral" | "happy" | "excited" | "thinking" | "confused" | "sad";
-
-export interface IActionConfirmation {
-  isConfirmed: boolean;
-  actionRegardingQuestion: string;
+interface IActionExecutorResponseResults {
+  taskId: string;
+  success: boolean;
+  data: Record<string, any>;
+  error?: string;
+  durationMs?: number;
+}
+export interface IActionExecutorResponse {
+  status: string;
+  results: Array<IActionExecutorResponseResults>;
+  message: string;
 }
 
-export interface IActionDetails {
-  type: IActionType;
-  query: string;
-  title?: string;
-  artist?: string;
-  topic?: string;
-  platforms?: string[];
-  app_name?: string;
-  target?: string;
-  location?: string;
-  searchResults?: any[];
-  confirmation: IActionConfirmation;
-  additional_info?: Record<string, any>;
-}
-
-export interface IAnswerDetails {
-  content: string;
-  sources?: string[];
-  references?: string[];
-  additional_info?: Record<string, any>;
-}
-
-export interface IAiResponsePayload {
-  userQuery: string;
-  answer: string;
-  answerEnglish: string;
-  actionCompletedMessage?: string;
-  actionCompletedMessageEnglish?: string;
-  action: string;
-  emotion: IEmotion;
-  answerDetails: IAnswerDetails;
-  actionDetails: IActionDetails;
-}
-
-export interface IPythonActionResponse {
-  status: "ok" | "error" | "confirmation_needed";
-  result?: any;
-  message?: string;
-}
-
-export interface IDeviceUsageStatusManager{
+export interface IDeviceUsageStatusManager {
   cpuUsage: number;
   ramUsage: number;
   storageData: { total: number; free: number; usage: number };
 }
-
 
 // Payload Mapper - FIXED: Now includes parameters
 export type IEventPayloadMapping = {
@@ -118,11 +71,11 @@ export type IEventPayloadMapping = {
   deleteToken: void;
 
   // Device Usage Status
-  getDeviceUsageStatus: IDeviceUsageStatusManager
-  poolDeviceStatus: void
+  getDeviceUsageStatus: IDeviceUsageStatusManager;
+  poolDeviceStatus: void;
 
-  // Python Automation - This defines what the handler receives
-  runPythonAction: IPythonActionResponse;
+  // Task Execution
+  executeTasks: IActionExecutorResponse;
 
   // Secondary Window
   openSecondaryWindow: void;
@@ -130,14 +83,15 @@ export type IEventPayloadMapping = {
   closeAiPanelExpansion: void;
 };
 
-
 declare global {
   interface Window {
     electronApi: {
       sendFrameAction: (payload: IFrameWindowAction) => void;
       getFrameState: () => Promise<IFrameWindowAction>;
       isMainWindowMaximized: () => Promise<boolean>;
-      onWindowMaximizeStateChange: (callback: (payload: boolean) => void) => () => void;
+      onWindowMaximizeStateChange: (
+        callback: (payload: boolean) => void,
+      ) => () => void;
 
       // Media APIs
       getMediaDevices: () => Promise<IMediaDevices>;
@@ -146,7 +100,6 @@ declare global {
       requestMediaPermissions: () => Promise<IMediaPermissions>;
       checkSystemPermissions: () => Promise<IMediaPermissions>;
 
-
       // token management APIs
       saveToken: (ACCOUNT_NAME: string, token: string) => Promise<void>;
       getToken: (ACCOUNT_NAME: string) => Promise<string | null>;
@@ -154,10 +107,12 @@ declare global {
 
       // Device Usage Status APIs
       getDeviceUsageStatus: () => Promise<IDeviceUsageStatusManager>;
-      onDeviceUsageStatusChange: (callback: (payload: IDeviceUsageStatusManager) => void) => () => void;
+      onDeviceUsageStatusChange: (
+        callback: (payload: IDeviceUsageStatusManager) => void,
+      ) => () => void;
 
-      // Python Automation API
-      runPythonAction: (payload: IAiResponsePayload) => Promise<IPythonActionResponse>;
+      // Python Automation API -  as SQH Listener
+      executeTasks: (tasks: any[]) => Promise<IActionExecutorResponse>;
 
       // Secondary Window API
       openSecondaryWindow: () => Promise<void>;

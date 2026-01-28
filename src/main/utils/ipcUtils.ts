@@ -1,5 +1,5 @@
 import {  ipcMain, WebContents, WebFrameMain, IpcMainInvokeEvent } from "electron";
-import { IEventPayloadMapping } from "../../../types.js";
+import { IEventPayloadMapping } from "@root/types";
 import { isDevMode } from "./isDevMode.js";
 
 export function ipcMainHandle<Key extends keyof IEventPayloadMapping>(

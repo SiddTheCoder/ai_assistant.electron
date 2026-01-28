@@ -3,7 +3,7 @@ import { registerMediaHandlers } from "./mediaHandlers.js";
 import { registerTokenHandlers } from "./tokenHandlers.js";
 import { registerDeviceHandlers } from "./deviceHandlers.js";
 import { registerWindowHandlers } from "./windowHandlers.js";
-import { registerPythonHandlers } from "./pythonHandlers.js";
+import { registerTaskHandlers } from "./taskHandlers.js";
 import { registerSecondaryWindowHandlers } from "./secondaryWindowHandlers.js";
 
 export function registerAllHandlers(mainWindow: MainWindow) {
@@ -13,6 +13,6 @@ export function registerAllHandlers(mainWindow: MainWindow) {
   registerTokenHandlers();
   registerDeviceHandlers(browserWindow);
   registerWindowHandlers(mainWindow);
-  registerPythonHandlers();
+  registerTaskHandlers();
   registerSecondaryWindowHandlers();
 }

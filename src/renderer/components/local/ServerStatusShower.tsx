@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useSocket } from "@/context/socketContextProvider";
-import type { ServerStatus } from "@/types/socket.types";
+import type { ServerStatus } from "@shared/socket.types";
 import { formatDate, formatTime } from "@/utils/date";
 import { Info } from "lucide-react";
 

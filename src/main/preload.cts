@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IEventPayloadMapping, IFrameWindowAction, IActionDetails, IAiResponsePayload, IDeviceUsageStatusManager } from "../../types"
+import { IEventPayloadMapping, IFrameWindowAction, IDeviceUsageStatusManager } from "@root/types";
+import type { TaskRecord } from "@shared/socket.types.js";
 
 (() => {
   console.log("Preload Loaded");
@@ -29,7 +30,7 @@ contextBridge.exposeInMainWorld("electronApi", {
   onDeviceUsageStatusChange: (callback : (payload:IDeviceUsageStatusManager ) => void) => ipcOn("getDeviceUsageStatus", callback),
 
   //python Automation API
-   runPythonAction: (payload: IAiResponsePayload) => ipcInvoke("runPythonAction", payload),
+  executeTasks: (payload: TaskRecord[]) => ipcInvoke("executeTasks", payload),
 
   //Secondary Window API
   openSecondaryWindow: () => ipcInvoke("openSecondaryWindow"),

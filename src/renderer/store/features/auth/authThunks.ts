@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { setUser,resetUser,setLoading,setErrorMessage, setSuccess } from "./authSlice";
 import { axiosInstance, type ApiResponse } from "@/utils/axiosConfig";
-import type { IVerifyOTP } from "@/types/auth.types";
+import type { IVerifyOTP } from "@shared/auth.types";
 import { useNavigate } from "react-router-dom";
 
 

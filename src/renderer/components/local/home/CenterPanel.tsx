@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { useSocket } from '@/context/socketContextProvider'
-import React, { useEffect } from 'react'
+import React from 'react'
 import axios from "axios"
-import type { IAiResponsePayload } from 'types'
 import { useSparkTTS } from '@/context/sparkTTSContext'
 import ServerStatusShower from '../terminals/ServerStatusTerminal'
 
 import { tokenRefreshManager } from "@/lib/auth/tokenRefreshManager";
+import type { TaskRecord } from "@shared/socket.types";
 
 
 
@@ -33,37 +33,32 @@ export default function CenterPanel() {
    audio.play();
   }
 
-  const obj: IAiResponsePayload = {
-  userQuery: "Spark open notepad",
-  answer: "नोटपैड खोल रहा हूं, सर।",
-  answerEnglish: "Opening notepad, Sir.",
-  actionCompletedMessage: "हो गया सर, देख सकते हैं। कुछ और चाहिए?",
-  actionCompletedMessageEnglish: "Done Sir, you can check. Need anything else?",
-  action: "open_notepad",
-  emotion: "neutral",
-  answerDetails: {
-    content: "Hey there new is me lorem ipsum",
-    sources: [],
-    references: [],
-    additional_info: {}
-  },
-  actionDetails: {
-    type: "open_app",
-    query: "open notepad",
-    title: "",
-    artist: "",
-    topic: "",
-    platforms: [],
-    app_name: "whatsapp",
-    target: "",
-    location: "",
-    searchResults: [],
-    confirmation: {
-      isConfirmed: true,
-      actionRegardingQuestion: ""
+  // TaskRecord for opening camera
+  const cameraTask: TaskRecord = {
+    task: {
+      taskId: "task_open_camera_001",
+      tool: "open_app",
+      executionTarget: "client",
+      dependsOn: [],
+      inputs: {
+        target: "camera"
+      },
+      inputBindings: {},
+      lifecycleMessages: {
+        onStart: "Opening camera...",
+        onSuccess: "Camera opened successfully!",
+        onFailure: "Failed to open camera"
+      },
+      control: {
+        onFailure: "continue",
+        timeoutMs: 30000
+      }
     },
-    additional_info: {}
-  }
+    status: "pending",
+    resolvedInputs: {
+      target: "camera"
+    },
+    createdAt: new Date().toISOString()
   }
   
 
@@ -75,23 +70,22 @@ export default function CenterPanel() {
     );
   }
 
-  const hit = async () => {
+  const openCamera = async () => {
     try {
-    
-       console.log("🟢 Calling window.electronApi.runPythonAction...");
-
-       const res = await window.electronApi.runPythonAction(obj);
+       console.log("🟢 Calling window.electronApi.executeTasks with camera task...");
+      
+       const res = await window.electronApi.executeTasks([cameraTask]);
 
        console.log("🟢 Response received:", res);
        setStatus(`Response: ${JSON.stringify(res)}`);
 
        if (res.status === "ok") {
-         console.log("✅ Action completed:", res.result);
+         console.log("✅ Camera opened:", res);
        } else {
-         console.error("❌ Action failed:", res.message);
+         console.error("❌ Failed to open camera:", res.message);
        }
     } catch (error) {
-      console.error("❌ Error calling Python action:", error);
+      console.error("❌ Error opening camera:", error);
       setStatus(`Error: ${error}`);
     }
   }
@@ -121,6 +115,13 @@ const handleRefreshToken = async (e: React.MouseEvent<HTMLButtonElement>) => {
         onClick={handleRefreshToken}
         >
         Refresh Token
+      </Button>
+      <Button 
+        type="button"
+        className="webkit-drag-nodrag bg-blue-600 hover:bg-blue-700 ml-2" 
+        onClick={openCamera}
+        >
+        📷 Open Camera
       </Button>
       <div className="mt-4 p-2 bg-gray-900 rounded">
         <p className="text-sm">Status: {status}</p>

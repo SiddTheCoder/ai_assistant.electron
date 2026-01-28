@@ -125,7 +125,7 @@ export const SparkTTSProvider = ({
 
     emit("request-tts", {
       text: next?.text,
-      user_id : "guest"
+      userId : "guest"
     });
   };
 

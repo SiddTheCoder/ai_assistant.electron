@@ -3,7 +3,7 @@ import {
   IMediaDevices,
   IMediaPermissions,
   IMediaDevice,
-} from "../../../types.js";
+} from "@root/types";
 
 export async function getMediaDevices(
   mainWindow: BrowserWindow

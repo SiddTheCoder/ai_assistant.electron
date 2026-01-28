@@ -7,6 +7,7 @@ export function getPreloadPath() {
     app.getAppPath(),
     isDevMode() ? "." : "..",
     "dist-electron",
+    "main",
     "preload.cjs"
   );
 }

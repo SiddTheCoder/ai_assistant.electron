@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import type{ ReactNode } from "react";
-import type { ThemePreferences, IUser } from "@/types/user.types";
+import type { ThemePreferences, IUser } from "@shared/user.types";
 
 // Default Blackish Theme
 const DEFAULT_THEME: ThemePreferences = {
@@ -32,8 +32,8 @@ interface ThemeProviderProps {
 export function ThemeProvider({ userDetails, children }: ThemeProviderProps) {
   const theme = useMemo(() => {
     // If user has valid theme prefs, merge/use them. Otherwise fallback to default.
-    if (userDetails?.theme_preferences) {
-      return { ...DEFAULT_THEME, ...userDetails.theme_preferences };
+    if (userDetails?.theme) {
+      return { ...DEFAULT_THEME, ...userDetails.theme };
     }
     return DEFAULT_THEME;
   }, [userDetails]);
